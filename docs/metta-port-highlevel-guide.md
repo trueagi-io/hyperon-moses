@@ -223,3 +223,33 @@ the estimator is greater than the original fitness pointwise, so that
 it will never under-evaluate good candidates, etc.
 
 ## Program Evolution as a Form of Reasoning
+
+One way to realize cognitive synergy is to never really leave the
+logical side.  That is, having MOSES explicitely operate as a form of
+reasoning.  I am not necessarily suggesting to do that, because it has
+a number of drawbacks, but it is likely the way I would do it if I
+were tasked to do the MOSES port myself.  The main drawbacks are
+
+1. the unfront cost of formulating evoluationary learning as a form of
+reasoning;
+2. the run-time cost of doing evolution using reasoning.
+
+The main benefit in my view, is that it enables, at least in
+potential, the deepest levels of cognitive synergy one can hope to
+achieve.  Besides, over time the run-time cost can be mitigated by
+*schematizing* (as Ben Goertzel likes to say), or *specializing* (as
+Alexey Potapov likes to say) the parts of MOSES that require the least
+amount of synergy with the rest of Hyperon.
+
+Perhaps a hybrid approach can be implemented, where MOSES is partly
+implemented as a regular function, and partly implemented as an
+explicit form of reasoning.  The non-determinism of MeTTa can make
+these distinctions somewhat blurried anyway.
+
+NEXT
+
+## Modularity
+
+## Author
+
+Nil Geisweiller
