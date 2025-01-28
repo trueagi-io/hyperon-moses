@@ -35,22 +35,18 @@ Classic to Hyperon.
 ## The Goal of the Port
 
 I believe the goal of the port should not be to verbatimely reproduce
-AS-MOSES inside Hyperon.  The goal, in my opinion, should be to have a
-*sufficiently open-ended program learning technology that integrates
-well with the rest of Hyperon to enable some form of cognitive
-synergy*.  Indeed, even though AS-MOSES contains important innovations
-that want be ported, it entirely misses the most import cognitive
-synergy aspect.  As such, by the end of the port it is not impossible
-we may want to renam it into something else such as *Hyperon Program
-Evolutionary Framework*, depending on how much it departs from the
-original MOSES.
+AS-MOSES inside Hyperon.  The goal, in my opinion, should be to create
+a *sufficiently open-ended program learning technology that integrates
+with the rest of Hyperon to enable some form of cognitive synergy*.
+Indeed, even though AS-MOSES contains important innovations that we
+want to be ported, it misses the cognitive synergy aspect.
 
 Pragmatically speaking, cognitive synergy here means that, if MOSES
 gets stuck in the process of evolving programs, it can formulate a
-demand of help to the rest of Hyperon, and take advantage of the reply
-to unstick itself.  Likewise, if other components of Hyperon are
-stuck, they can formulate demands of help to MOSES and take advantage
-of its reply.
+demand of help to the rest of Hyperon, and take advantage of the
+response to unstick itself.  Likewise, if other components of Hyperon
+are stuck, they can formulate demands of help to MOSES and take
+advantage of its response.
 
 There are many ways such cognitive synergy could be realized, I will
 describe some that I like (or at least I understand), but ultimately
@@ -222,13 +218,13 @@ original fitness, while guarantying properties such as for instance
 the estimator is greater than the original fitness pointwise, so that
 it will never under-evaluate good candidates, etc.
 
-## Program Evolution as a Form of Reasoning
+## Program Evolution as Reasoning Process
 
 One way to realize cognitive synergy is to never really leave the
 logical side.  That is, having MOSES explicitely operate as a form of
-reasoning.  I am not necessarily suggesting to do that, because it has
-a number of drawbacks, but it is likely the way I would do it if I
-were tasked to do the MOSES port myself.  The main drawbacks are
+reasoning.  I am not necessarily advocating for that, because it has a
+number of drawbacks, but it is likely the way I would do it if I were
+tasked to do the MOSES port myself.  The main drawbacks are
 
 1. the unfront cost of formulating evoluationary learning as a form of
 reasoning;
@@ -241,12 +237,205 @@ achieve.  Besides, over time the run-time cost can be mitigated by
 Alexey Potapov likes to say) the parts of MOSES that require the least
 amount of synergy with the rest of Hyperon.
 
-Perhaps a hybrid approach can be implemented, where MOSES is partly
-implemented as a regular function, and partly implemented as an
-explicit form of reasoning.  The non-determinism of MeTTa can make
-these distinctions somewhat blurried anyway.
+Perhaps a hybrid approach can be considered from the get go, where
+MOSES is partly implemented in a functional way, and partly
+implemented as an explicit form of reasoning.  The non-determinism of
+MeTTa can actually make these distinctions somewhat blurried.
 
-NEXT
+The general idea of framing evoluation as a form of reasoning is that
+the problem of finding good program candidates is directly formulated
+as a query in logic, then MOSES merely provides an efficient inference
+control mechanism to fulfill such query, and by that discover such
+program candidates.
+
+There are at least two ways to formulate such query, in a
+non-constructive vs constructive way.  Explaining in depth the
+difference between the two is probably outside of the scope of that
+document but for our concern it suffices to say that in constructive
+mathematics proving an existential statement, such as `∃x P(x)`,
+garanties that there is a way to construct an object `a` such that
+`P(a)` is true.  While in non-constructive mathematics one could
+indeed prove the existence of an object without ever having to be able
+to construct it.
+
+Due to that major difference, formulating such query will take a
+different shape if it is done in a constructive vs non-constructive
+way.
+
+### Constructive Way
+
+In the constructive case a statement leading to finding a program
+candidate may merely look like
+
+```
+∃x GoodFit(x)
+```
+
+Then finding a proof of such statement will provide a program
+candidate.  To find more candidates one may simply finding more
+proofs.
+
+### Non-constructive Way
+
+In the non-constructive way, it is also possible to use reasoning to
+find program candidates, but the candidate must instead be represented
+as a free variable inside the statement, and the reasoning must be
+able to instantiate that variable during reasoning.  At the end of the
+reasoning process, the candidate may be absent from the proof, but
+present inside a refined version of the statement.  For instance such
+statement may initially look like
+
+```
+GoodFit(x)
+```
+
+Then finding a proof will result in a program candidate appearing in
+the now grounded statement
+
+```
+GoodFit(CANDIDATE)
+```
+
+The backward and forward chainers of Hyperon support both,
+constructive and non-constructive, ways.  Thus it is not immediately
+obvious which way is best.  Ultimately we will have to experiment with
+both ways to really know.
+
+### Type Theoretical Way
+
+The Type Theoretical way can be used both constructively and
+non-constructively, though particularily shines when used
+constructively.
+
+We will give below an example of how to use dependent types, and more
+specifically the Sigma type, Σ, to represent such existentially
+quantified statements and to discover program candidates.
+
+### GoodFit as Type Predicate
+
+The standard way to represent existential quantification with
+dependent types is via the Sigma type, Σ, which can be defined in
+MeTTa as follows
+
+```
+(: MkΣ (-> (: $p (-> $a Type))
+           (: $x $a)
+           (: $prf ($p $x))
+           (Σ $a $p)))
+```
+
+where
+- `$p` is a predicate type,
+- `$a` is the domain of `$p`,
+- `($p $x)` is `$p` applied to an element `$x` of `$a`,
+- `$prf` is a proof of `($p $x)`,
+- `(Σ $a $p)` is the Sigma type expressing that there exists an
+  element of `$a` which satisfied property `$p`.
+
+In our case the property will be the goodness of fit.  However,
+because we want to be able to quantify that fitness, the predicate is
+parameterized by the fitness score.  In the end the type we are
+looking for looks something like
+
+```
+(Σ (-> Bool Bool Bool) (Fit 0.7))
+```
+
+where `(-> Bool Bool Bool)` represents the domain of the candidates,
+in this case, binary Boolean functions, and `(Fit 0.7)` represents the
+predicate expressing the class of candidates that are fit with degree
+of fitness 0.7.  Thus `GoodFit` has been replaced by the parameterized
+type `(Fit FITNESS)`.
+
+A proof for such type may look like
+
+```
+(MkΣ (Fit 0.7) (λ $x (λ $y (and $x $y))) PROOF_OF_FITNESS)
+```
+
+One can verify that each argument is an inhabitant of the argument
+types of `MkΣ`, meaning
+
+- `(: (Fit 0.7) (-> (-> Bool Bool Bool) Type))`
+- `(: (λ $x (λ $y (and $x $y))) (-> Bool Bool Bool))`
+- `(: PROOF_OF_FITNESS ((Fit 0.7) (λ $x (λ $y (and $x $y)))))`
+
+`PROOF_OF_FITNESS` is left unspecified for efficiency reasons.  We
+will see indeed that we can inject computations in that reasoning
+process, thus not necessarily framed as a form of reasoning, to speed
+up some aspects of it.
+
+Note that a proof of `(-> Bool Bool Bool)` is a program, and the
+reasoning process will be able to build that program in the same
+manner that it can build a proof.
+
+A prototype of such evolutionary program learner framed as a reasoning
+process can be found [here](URL).  Beware though that a few of things
+have been changed.
+
+1. In order to quote the programs, to avoid spontaneous reduction by
+   the MeTTa interpreter over a reducable MeTTa expression such as
+   `(and True False)`, the vocabulary does not include MeTTa built-ins
+   such as `and`, `True`, etc.  Instead new symbols are introduced
+   using unicode, so that `and` in MeTTa becomes `𝐚𝐧𝐝` in the
+   reasoning process, etc.  This could perhaps be avoided by a clever
+   use of the `quote` built-in, or by implementing the chainer in
+   Minimal MeTTa.  But for the sake of simplicity and speed, this
+   prototype uses that unicode trick instead.
+
+2. Similarily, to avoid spontaneous unification from taking placed
+   during reasoning, variables inside programs are replaced by
+   DeBruijn indices.  So for instance `(λ $x (λ $y (and $x $y)))`
+   becomes `(λ (λ (and z (s z))))` where `z` is the first DeBruijn
+   index, `(s z)` is the second, etc.
+
+3. To avoid exacerbating combinatorial explosion, lambda abstraction
+   is actually completely eliminated.  So instead of introducing
+   program variables (i.e. DeBruijn indices) via lambda abstraction,
+   these are manually added to the environment at the beginning of
+   reasoning.  As a result instead of evolving a program with the type
+   signature `(-> Bool Bool Bool)`, the following assumptions are
+   added `(: z Bool)` and `(: (s z) Bool)` representing the types of
+   the first two arguments of the program to evolve.  And thus the
+   type signature of the program `(-> Bool Bool Bool)` is replaced by
+   `Bool`.  Note that this gymnastic is actually exactly what the
+   chainer does when encountering a lambda abstraction, so it is a
+   rather natural trick.  The difference is that it is done before
+   reasoning and never during reasoning, because, as I said,
+   introducing lambda abstraction on the fly during reasoning
+   exacerbates combinatorial explosion.  Indeed, every new lambda
+   abstraction increases the possibilities of function applications,
+   and every new function application provides one more body for
+   lambda abstraction.  That situation becomes rapidely unmanageable,
+   thus why we try to avoid it.  It may be that at some point
+   reasoning becomes so efficient that lambda abstraction can be
+   re-introduced.
+
+### Reasoning Efficiently
+
+Of course framing learning as a form of reasoning, as elegant as it
+may be, is only worth it if it results in an efficient process.  There
+are at least two ways this can be accomplished:
+
+1. Injecting regular computation in the reasoning process.  The idea
+   is to outsource some proof obligations to some external
+   computational processes that we trust.  For instance, let's say we
+   want to prove that 2 + 3 = 5.  One way to do this is to use
+   reasoning exclusively, progressively transforming 2 + 3 to 1 + 4,
+   then to 0 + 5, then finally to 5 by manipulating the laws of
+   equality and addition.  Even though this way is perfectly correct
+   it is also quite costly.  Another way to do this is to query the
+   CPU with an ADD instruction with 2 and 3 as arguments, get the
+   results, and trust that the resulting equation is indeed true.
+   This is how `PROOF_OF_FITNESS` would be typically obtained in our
+   evolutionary programming case.  In fact in the prototype referenced
+   earlier such proof is labelled `CPU` to convey the idea that it can
+   be read as "it is true because the CPU said so".  Of course, in
+   reality, more that the CPU has to say so, the function that is part
+   of that external computational process has to be properly
+   implemented, but we call it `CPU` merely to capture that idea.
+
+2. Leveraging inference control.  NEXT
 
 ## Modularity
 
