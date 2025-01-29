@@ -187,7 +187,7 @@ amount of available resources.
 #### How can MOSES helps MOSES?
 
 MOSES should be able to discover pattern inside its own traces, in the
-manner as described in [How can MOSES helps MOSES?](#how-can-hyperon-helps-moses?).
+manner described in [How can Hyperon helps MOSES?](#how-can-hyperon-helps-moses?).
 Thus by applying MOSES at the meta-level, MOSES could in fact help itself.
 
 ### Cognitive Synergy between MOSES and Humans
@@ -347,6 +347,27 @@ predicate expressing the class of candidates that are fit with degree
 of fitness 0.7.  Thus `GoodFit` has been replaced by the parameterized
 type `(Fit FITNESS)`.
 
+--------------------------------------------------------------------
+
+NEXT: beautify the following
+
+```
+(moses ... (: $cnd (Σ (-> Bool Bool Bool) (Fit $score))))
+(bc ... (: $cnd (Σ (-> Bool Bool Bool) (Fit $score))))
+
+(= (moses ...) .............................. (bc &kb Z (: .....)))
+
+(moses HYPER-PARAMETERS PRBL1)    |
+(moses PRBL2)    |
+(moses PRBL3)    |  Meta-learning     ->  (moses, nace, bc, hyperon ...)
+(moses PRBL4)    |
+...              |
+
+
+(= (nace ...) (if (...) (moses ...) (bc ...)))
+```
+--------------------------------------------------------------------
+
 A proof for such type may look like
 
 ```
@@ -370,8 +391,9 @@ reasoning process will be able to build that program in the same
 manner that it can build a proof.
 
 A prototype of such evolutionary program learner framed as a reasoning
-process can be found [here](URL).  Beware though that a few of things
-have been changed.
+process can be found
+[here](https://github.com/trueagi-io/chaining/tree/main/experimental/evolutionary-programming).
+Beware though that a few of things have been changed.
 
 1. In order to quote the programs, to avoid spontaneous reduction by
    the MeTTa interpreter over a reducable MeTTa expression such as
@@ -422,20 +444,52 @@ are at least two ways this can be accomplished:
    computational processes that we trust.  For instance, let's say we
    want to prove that 2 + 3 = 5.  One way to do this is to use
    reasoning exclusively, progressively transforming 2 + 3 to 1 + 4,
-   then to 0 + 5, then finally to 5 by manipulating the laws of
-   equality and addition.  Even though this way is perfectly correct
-   it is also quite costly.  Another way to do this is to query the
-   CPU with an ADD instruction with 2 and 3 as arguments, get the
-   results, and trust that the resulting equation is indeed true.
-   This is how `PROOF_OF_FITNESS` would be typically obtained in our
-   evolutionary programming case.  In fact in the prototype referenced
-   earlier such proof is labelled `CPU` to convey the idea that it can
-   be read as "it is true because the CPU said so".  Of course, in
-   reality, more that the CPU has to say so, the function that is part
-   of that external computational process has to be properly
-   implemented, but we call it `CPU` merely to capture that idea.
+   then to 0 + 5, then finally to 5, all that by manipulating the laws
+   of equality and addition.  Even though this way is perfectly
+   correct it is also quite costly.  Another way to do this is to
+   query the CPU with an ADD instruction with 2 and 3 as arguments,
+   get the results, and trust that the resulting equation is indeed
+   true.  This is how `PROOF_OF_FITNESS` would be typically obtained
+   in our evolutionary programming case.  In fact in the prototype
+   referenced earlier such proof is labelled `CPU` to convey the idea
+   that "it is true because the CPU said so".  Of course, in reality,
+   more that the CPU has to say so, the function that is part of that
+   external computational process has to be properly implemented, but
+   we call it `CPU` to capture that idea.
 
-2. Leveraging inference control.  NEXT
+2. Leveraging inference control.  This is where the most speed-up can
+   be obtained, but this is also the most difficult way.  It is one of
+   those "AGI-complete" problems, one that if you achieve it, you
+   likely achieve AGI.  A potential solution for this problem is
+   almost the same as the one presented for cognitive synergy.  A
+   record of past inferences is stored and analyzed to extract
+   predictive patterns used to guide an inference control mechanism
+   for subsequent inferences.  This would be the most generic
+   solution.  But one can also consider more specific handcrafted
+   solutions, by implementing good old heuristics.  Indeed, one can
+   see a particular Genetic Programming algorithm as implementing such
+   heuristics.  There are then two ways to do that
+
+   a. Substitute the chaining by an specific searching algorithm.  In
+      that case the only remnant of a notion of reasoning is in the
+      way the problem and the solutions are described (using a logical
+      language as explained above).  The advantage is that one, by
+      re-using existing search algorithms, can achieve speed quickly.
+      The inconvenient is that it is somewhat inflexible to
+      improvements, unless one is willing to learn search algorithms
+      (which MOSES could potentially do, BTW).
+
+   b. Reframe the heuristics as a set of procedural rules guiding an
+      explicit inference control mechanism.  For an example of how to
+      do that, see the following
+      [experiment](https://github.com/trueagi-io/chaining/tree/main/experimental/inference-control)
+      (beware that it is a very early stage prototype).  The
+      inconvenient of that approach is that one needs to rethinking
+      how to map the heuritics to that rule-based format.  The
+      advantage is that it can then easily be combined with more
+      generic meta-learning forms.  What that means is that the
+      developer may initially provide a search heuristic, and then let
+      Hyperon improve that heuristic over time.
 
 ## Modularity
 
