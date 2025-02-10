@@ -1,7 +1,11 @@
+TODO: internal storage of say population of candidates should also
+follow a common language.
+
 # High Level Guide of AS-MOSES port to Hyperon/MeTTa
 
 This document is a high level guide of the AS-MOSES port from OpenCog
-Classic to Hyperon/MeTTa.
+Classic to Hyperon/MeTTa.  It also touches upon the notion of
+Cognitive Synergy in a broader context.
 
 ## AS-MOSES, a brief history
 
@@ -9,62 +13,168 @@ MOSES, which stands for *Meta-Optimizing Semantic Evolution Search*,
 is an evolutionary program learner initially developed by Moshe Looks.
 It takes in input a problem description, and outputs a set of programs
 supposed to solve that problem.  A typical example is the problem of
-fitting data, in that case the problem description is a table mapping
-inputs to outputs alongside a fitness function measuring how well a
-candidate fits that data.
+fitting data, in that case the problem description may be a table
+mapping inputs to outputs alongside a fitness function measuring how
+well a candidate fits that data.
 
 I believe the primary motivation behind the creation of MOSES came
 from the desire to adapt existing EDA (Estimation of Distribution
 Algorithm) methods to evolve programs instead of mere bitstrings.
-Upon investigating that space, Moshe (possibly with the help of Ben)
-discovered that by combining a few tricks, evolving programs in that
-manner was actually effective.  We'll come back to these tricks but,
-let me say that, as with anything, these tricks only work under some
+Upon investigating that space, Moshe (probably with the help of Ben)
+discovered that by combining a few tricks, evolving programs using EDA
+was actually competitive.  We'll come back to these tricks but, let me
+say that, as with anything, these tend to only work well under some
 assumptions, which will attempt to recall as well.
 
-Initially MOSES' candidate representation language was its own thing,
-called Combo and described as "Lisp with a bad haircut" by Moshe
-himself.  Later on, as OpenCog Classic developed, the need to
+Initially, the target programming language (i.e. the representational
+language of the candidates being evolved) supported by MOSES was its
+own thing, called Combo and described by Moshe as "Lisp with a bad
+haircut".  Later on, as OpenCog Classic developed, the need to
 integrate MOSES more deeply into OpenCog Classic came to be, and the
 work of replacing Combo by Atomese, the language of OpenCog Classic
-(the equivalent of MeTTa for Hyperon) was enacted.  The resulting code
-was called AS-MOSES, for AtomSpace-MOSES.  That endeavor however never
-completed because the development effort was then turned from OpenCog
-Classic to Hyperon.
+(the equivalent of MeTTa for Hyperon) was initiated.  The resulting
+product was called AS-MOSES, for AtomSpace-MOSES.  That endeavor
+however was never completed because the development effort was then
+shifted from OpenCog Classic to Hyperon.
+
+The repositories of MOSES can be found [here](URL) and that of
+AS-MOSES can be found [there](URL).  There are very similar, the main
+difference is that AS-MOSES contains some code for evolving Atomese
+programs beside Combo.  The AS-MOSES code base is, in some respects, a
+tiny bit cleaner, but also larger due to the additional Atomese
+support.  In the rest of the document I will often mention MOSES while
+meaning either MOSES or AS-MOSES.
 
 ## The Goal of the Port
 
 I believe the goal of the port should not be to verbatimely reproduce
 AS-MOSES inside Hyperon.  The goal, in my opinion, should be to create
-a *sufficiently open-ended program learning technology that integrates
-with the rest of Hyperon to enable some form of cognitive synergy*.
-Indeed, even though AS-MOSES contains important innovations that we
-want to be ported, it misses the cognitive synergy aspect.
+a *sufficiently open-ended program learning framework that integrates
+well with the rest of Hyperon to enable some form of cognitive
+synergy*.  Indeed, even though AS-MOSES contains important innovations
+that we want to be ported, it largely misses the cognitive synergy
+aspect.
 
-Pragmatically speaking, cognitive synergy here means that, if MOSES
+Pragmatically speaking, cognitive synergy here means that if MOSES
 gets stuck in the process of evolving programs, it can formulate a
-demand of help to the rest of Hyperon, and take advantage of the
-response to unstick itself.  Likewise, if other components of Hyperon
-are stuck, they can formulate demands of help to MOSES and take
-advantage of its response.
+request of help to the rest of Hyperon and take advantage of Hyperon
+to unstick itself.  Likewise, if other components of Hyperon are
+stuck, they can formulate requests of help to MOSES and take advantage
+of it.
 
 There are many ways such cognitive synergy could be realized, I will
-describe some that I like (or at least I understand), but ultimately
-how to do that well, i.e. enable synergy as opposed to interference,
-is an open question.
+describe some that I like (or that at least I understand), but
+ultimately how to do that well, i.e. producing synergy as opposed to
+interference, is an open question.
 
 There is also another form of synergy, perhaps just as important, the
-synergy between MOSES and its users.  This could for instance be
-enabled by integrating MOSES to the MeTTa LSP server.  More will be
-said on that further below.
+synergy between MOSES and users.  This could for instance be realized
+by integrating MOSES to a MeTTa LSP server.  More will be said on that
+further below.
 
-## Set of requirements
+## MOSES's (not so) Secret Sauce
 
-### Conceptual requirements
+Let me briefly recall the main tricks I eluded earlier that
+contributed to make MOSES competitive.
 
-### Pragmatic requirements
+1. Reduce candidates to normal form.  That trick consists in applying
+   rules to transform candidates into some (ideally unique) canonical
+   form while preserving semantics.  For example `(and y x)` would
+   become `(and x y)`, thus if MOSES generates both `(and x y)` and
+   `(and y x)`, after reduction they would both point to the same
+   candidate.  This has the following advantages:
 
-## A case for reasoning-based evolution
+   1.a. Avoid re-evaluating syntactically different, yet semantically
+        identical candidates, saving some resources in the process.
+
+   1.b. Candidates that are more consistently formatted are also more
+        likely to be recombined meaningfully.
+
+   1.c. Increase syntactic vs semantics correlation.  It is possible
+        to design reduction rules so that candidates that are
+        syntactically similar are more likely to be semantically
+        similar.  This has the effect of making the fitness landscape
+        less chaotic, therefore less deceptive.  The Elegant Normal
+        Form happens to have such property.
+
+2. Locally vectorize the search space.  Given an exemplar candidate,
+   MOSES generates a program subspace around that candidate, called a
+   deme.  Such subspace happens to be a vector space, thus amenable to
+   a battery of optimization techniques, including EDAs.  Upon
+   optimizing a deme, MOSES collects promising candidates that can
+   subsequently be used as exemplars to spawn more demes.
+
+3. Vectorize the fitness.  Instead of reducing the fitness to a single
+   number, the fitness can be represented as a vector of components,
+   thus providing some support for multi-objective optimization.  For
+   example, MOSES can asked to retain only the Pareto front of a
+   population.  Additionally, diversity pressure can be applied during
+   search by taking into account the distance between such
+   multi-objective scores.  Typically, component would represent the
+   fitness of the candidate for each data point, as opposed to just
+   its aggregated fitness.
+
+As always, it was observed that these tricks could speed-up evolution
+in some situations and slow it down in others.  Choosing the right
+hyper-parameters for a given problem was often a difficult task.
+
+## Porting MOSES's tricks to Hyperon
+
+What is enumerated above is not the full set of tricks MOSES used, but
+constitute a good starting point for porting to Hyperon.  Let me
+provide some high-level guidance, or personal opinions, in that
+respect.
+
+1. Reduce candidates to normal form.  I believe this can be elegantly
+   ported using either the native MeTTa pattern-based interpreter, or
+   the chaining technology developed [here](URL).  It does require to
+   redefine the Elegant Normal Form algorithm as an explicit set of
+   rewriting rules.  I believe it is worth the effort because it may
+   then offert more flexibility and extendability.  Indeed, some
+   problems require weaker or stronger forms of reduction.  By
+   breaking down a monolithic implementation into rules, one can more
+   easily assemble subset of rules to control the reduction strength
+   on a per situation basis.  Also, by reframing reduction as a form
+   of reasoning, it opens the door to more flexible hybridization
+   between evolution and reasoning.
+
+2. Locally vectorize the search space.  Even though vectorizing the
+   search space is a convenient and powerful way to represent a space
+   to optimize, I do not think the port should be reduced only to
+   that.  Indeed, it has also some drawbacks, one being that what is
+   learned in a local representation is not necessarily easy to
+   transfer to other representations.  In the OpenCog Classic version,
+   EDA was taking the form of learning a Bayesian Network over the
+   components of such vector.  But since the semantics of each
+   component was not the same for other vector spaces (obtained from
+   other exemplars), the wisdom accumulated during the optimization of
+   a deme would not be directly transferable to other demes.  Thus I
+   recommand to port that aspect but also to explore other, perhaps
+   less local, representations.  Also, the way Bayesian learning phase
+   did not take into account the confidence of the probabilities
+   learned, which in turn made difficult to properly balance
+   exploitation and exploration during sampling phase.  PLN, which has
+   a native support for confidence, could potentially be used as a
+   replacement.  I should mention that when vectorizing a program
+   space, there is an inherant tension between expressivity and
+   regularity.  The more expressively dense a representation is, the
+   more deceptive it likely is as well, so vectorizing should be
+   flexible and easily reprogrammable as well.  Among the set of
+   possibilities, perhaps the following paper is relevant [1](REF).
+
+3. Vectorize the fitness.  I think MOSES did a good job there and it
+   can probably be ported almost as it is.  There are a number of
+   diversity distances that could be ported as well.  Although to be
+   perfectly clear, as every hyper-parameters in MOSES, choosing when
+   and when not to use such diversity pressures very difficult.  For
+   instance, retaining only the Pareto front would speed up the search
+   for some problems, but slow it down for others.  Same thing for
+   diversity pressure and other hyper-parameters related to diversity.
+   Regarding porting the various fitness functions, there is something
+   that can be brought to the next level though, which is to treat the
+   fitness as a clear box as opposed to a black box.  See Section
+   [Black box vs clear box](black-box-vs-clear-box) for a discussion
+   on the matter.
 
 ## Cognitive Synergy
 
@@ -204,6 +314,178 @@ possible as well.  Upon launching MOSES, the user should be able to
 interrupt it, query its state, inspect its memory content, and even
 modify it as to change the direction of the search.
 
+### The Case for a Common Language
+
+As I said there are multiple ways cognitive synergy can be realized.
+What I am going to present is simply the use of a common language to
+communicate between parts of Hyperon.  Let me reuse the old notion of
+*mind agent* from OpenCog Classic, as cognitive process that would
+operate within Hyperon.  Mind agents would be for instance MOSES, the
+backward chainer, ECAN, etc.  So the idea is that all mind agents
+share a common language to formulate requests of help to each others.
+Which brings the question of what language to use.
+
+Of course the answer is MeTTa, but there are many ways MeTTa can be
+used.  So more specifically, for starter, I suggest to borrow standard
+constructs from Dependently Typed Languages, such as dependent sums
+and products.  To be clear, I am not necessarily advocating that we
+use such a language in the long term, even though I believe it is a
+good start due to its expressive power and popularity.  But it also
+has drawbacks, probably the main one being that it is based on a crisp
+typing relationship.  So we may for instance want to replace that by
+some probabilistic extension as explored by Jonathan Warrell, Greg
+Meredith and Mike Stay.  Of course, one ought to mention PLN as a
+potential candidate as well.  PLN was in fact the primary candidate
+for such common language back in the OpenCog Classic days, but with
+the recent developments of probabilistic dependent types that question
+requires reconsiderations.  PLN has also some drawbacks, one being
+that, at least as formulated in the PLN book, it is non-constructive,
+unlike dependent types.  But it is conceivable that a future version
+of PLN, built on top of such probabilistically dependently typed
+languages, may become once again that common language.  These
+questions will need to be carefully re-examined as conceptual and
+technical progress are being made.  For now let me simply explain how
+such common language, as a regular dependently typed language crafted
+for MeTTa, can be used for cognitive synergy.
+
+The idea would be that when calling a mind-agent, the description of
+the problem to solve is provided in that common language.  So, it does
+not matter if the mind agent is MOSES, the backward chainer, or
+something else, the query would essentially look the same.  That
+approach is reminiscent to Ben Goertzel `SampleLink` idea, but
+materialized somewhat more conventially, using type theoretic query
+answering at the center rather than sampling.  Which does not exclude,
+far from it, to re-introduce explicit forms of sampling later on.
+
+So the basic format for calling such mind agent would be as follows
+
+```
+(<MIND_AGENT> <HYPER_PARAMETER> <QUERY>)
+```
+
+where
+- `<MIND_AGENT>` is a MeTTa function, such as `moses`, for MOSES, or
+  `bc` for the backward chainer, etc.
+- `<HYPER_PARAMETER>` is a data structure containing all the
+  hyper-parameter for the call.  That structure would contain for
+  instance the effort to allocate, various default heuristics, how
+  much complexity pressure to apply, pointers to spaces containing
+  meta-knowledge, etc.
+- `<QUERY>` is the query itself, a description of the problem to
+  solve.  That description does not necessarily have to be big and
+  complex because it can take advantage of a vocabulary defined in
+  spaces referenced inside the `<HYPER_PARAMETER>` structure.
+
+For instance, if one wishes to evolve a program computing a binary
+function that fits a certain data set, one may express that with
+
+```
+(moses `<MOSES_HYPER_PARAMETER>`
+       (: $cnd_prf (Σ (-> Bool Bool Bool) (FitMyData $fitness))))
+```
+
+where
+- `(-> Bool Bool Bool)` is the type signature of the candidate we are
+  look for.
+- `FitMyData` is a parameterized type representing a particular custom
+  fitness measure.  For the query to be understood, `FitMyData` must
+  be defined in a space referenced inside `<MOSES_HYPER_PARAMETER>`.
+- `$fitness` is a MeTTa variable representing a hole in the query to
+  be determined by MOSES for each candidate, corresponding to the
+  actual fitness score of that candidate.
+- `Σ` is a Sigma type, a dependent sum, expressing the existence of
+  such candidates in a constructive manner.
+- `$cnd_prf` is a hole representing an inhabitant of that sigma type,
+  which, upon answering the query, should contain both the candidate
+  and the proof that this candidate fulfills the query.  If more than
+  one such candidate exists, then the result should be a superposition
+  of the inhabitants.
+
+In that example `FitMyData` is used to hide the complexity of the
+query, it does mean though that a space containing the definition of
+`FitMyData` must be provided in the hyper-parameter, and other
+mind-agents will need to have access to that space to fully unpack the
+meaning of `FitMeData`.  More self contained definitions can also be
+provided by a structured type instead of a mere symbol referring to a
+predefined type.  How exactly that structured type would look like is
+beyond the scope of that document and does not matter too much.  All
+that matters is that the resulting type follows the type signature
+required by `Σ`, which in that specific example would be
+
+```
+(-> (-> Bool Bool Bool) Type)
+```
+
+meaning that `FitMeData`, or whatever equivalent structured type, must
+describe a type constructor that takes a binary boolean function and
+returns a type.  This is a common way to represent predicates in
+Dependently Typed Languages.
+
+Maybe one realizes that MOSES is in fact inadequate to discover such
+candidate, thus may attempt to call the backward chainer instead
+
+```
+(bc `<BC_HYPER_PARAMETER>`
+    (: $cnd_prf (Σ (-> Bool Bool Bool) (FitMyData $fitness))))
+```
+
+As you can see the query remains the same, only the function being
+called and its hyper-parameters are different.
+
+But the use of that common language does not stop here as mind agents
+can use such querying format internally.  Let's say for instance that
+MOSES, within the course of its execution has an important decision to
+make, which could be for instance: should I search a given deme more
+deeply, or abandon that deme and create a new one?  A sketch of the
+code could like like:
+
+```
+(= (moses $hps $query)
+   <BODY ...
+         (if (continue-search-deme $deme)
+             <SEARCH_DEME>
+             <CREATE_NEW_DEME>)
+         ...>)
+```
+
+The idea is that instead of having `continue-search-deme` make that
+decision in isolation, MOSES can formulate that question to Hyperon.
+If Hyperon knows the answer, then MOSES can take advantance of that
+knowledge, ortherwise it can defer to a default behavior.  What it
+means that is the code of `continue-search-deme`, instead of solely
+consisting of hardcoded heuristics, may contain queries such as
+
+`(bc <BC_HYPER_PARAMETERS> <QUERY_ABOUT_DEME_CONTINUATION>)`
+
+Here the backward chainer is used as example because it is assumed to
+be somewhat unversal, maybe we want to have an even more universal
+access point such as `hyperon`, this looking even closer to the
+`SampleLink` idea.  Regardless, what will typically happen is that
+such query will be parameterized to have a minimal cost, to not slow
+down MOSES in its process flow.  For instance the depth of reasoning
+used to answer that query could be null or almost null, keeping the
+reasoning shallow and inexpensive, if any.  That way, if Hyperon knows
+the answer it can help MOSES right away, otherwise, a record of that
+innability to answer can be kept and used as feedback to incentivize
+Hyperon to learn to succeed in the future.
+
+One could envision a scenario where MOSES is being called on a series
+of problems, while in the background other mind-agents operate some
+forms of meta-learning and meta-reasoning to build-up the knowledge to
+eventually help MOSES.  This can be illustrated as follows:
+
+```
+(moses HPS1 QUERY1)  <- Hyperon fails to help   |   Meta-learning ...
+(moses HPS2 QUERY2)  <- Hyperon fails to help   |   Meta-learning ...
+(moses HPS3 QUERY3)  <- Hyperon fails to help   |   Meta-learning ...
+(moses HPS4 QUERY4)  <- Hyperon fails to help   |   Meta-learning (discovery)
+(moses HPS5 QUERY5)  <- Hyperon succeeds!       |   Meta-learning ...
+```
+
+At each run towards the beginning, Hyperon fails to help MOSES at a
+particular decision point (such as deme continuation), till the
+knowledge to help is finally discovered.
+
 ## Black box vs clear box
 
 The most basic way to use a fitness function is as a black box that
@@ -211,12 +493,17 @@ can score candidate solutions and nothing more.  That is likely the
 only way when it is written in a foreign programming language such as
 C++.  However, as soon as it is written in MeTTa it becomes a clear
 box.  Such fitness can now be analyzed and reasoned upon.  The
-possibilities this offers are limitless, but just to give a simple
+possibilities this offers are limitless.  Just to give a simple
 example, one could for instance invoke a reasoner to come up with a
 fitness estimator that is less accurate but more efficient than the
-original fitness, while guarantying properties such as for instance
-the estimator is greater than the original fitness pointwise, so that
-it will never under-evaluate good candidates, etc.
+original fitness, while guarantying properties such that for instance
+the estimator pointwise dominate the original fitness, so that it will
+never under-evaluate good candidates, etc.
+
+I mentioned earlier that MOSES was able to handle multi-objective
+fitness, it was in fact the only available transparency with respect
+to the fitness function MOSES had.  Using MeTTa to describe such
+fitness would allow to go much beyond that.
 
 ## Program Evolution as Reasoning Process
 
@@ -347,27 +634,6 @@ predicate expressing the class of candidates that are fit with degree
 of fitness 0.7.  Thus `GoodFit` has been replaced by the parameterized
 type `(Fit FITNESS)`.
 
---------------------------------------------------------------------
-
-NEXT: beautify the following
-
-```
-(moses ... (: $cnd (Σ (-> Bool Bool Bool) (Fit $score))))
-(bc ... (: $cnd (Σ (-> Bool Bool Bool) (Fit $score))))
-
-(= (moses ...) .............................. (bc &kb Z (: .....)))
-
-(moses HYPER-PARAMETERS PRBL1)    |
-(moses PRBL2)    |
-(moses PRBL3)    |  Meta-learning     ->  (moses, nace, bc, hyperon ...)
-(moses PRBL4)    |
-...              |
-
-
-(= (nace ...) (if (...) (moses ...) (bc ...)))
-```
---------------------------------------------------------------------
-
 A proof for such type may look like
 
 ```
@@ -492,6 +758,9 @@ are at least two ways this can be accomplished:
       Hyperon improve that heuristic over time.
 
 ## Modularity
+
+Break up MOSES into subcomponents, using the same dependent types
+format.
 
 ## Author
 
