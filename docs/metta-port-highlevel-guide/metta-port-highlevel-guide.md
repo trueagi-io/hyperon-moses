@@ -1,11 +1,8 @@
-TODO: internal storage of say population of candidates should also
-follow a common language.
-
 # High Level Guide of AS-MOSES port to Hyperon/MeTTa
 
 This document is a high level guide of the AS-MOSES port from OpenCog
-Classic to Hyperon/MeTTa.  It also touches upon the notion of
-Cognitive Synergy in a broader context.
+Classic to Hyperon/MeTTa.  It also discusses the notion of Cognitive
+Synergy in the context of that port as well as in the broader context.
 
 ## AS-MOSES, a brief history
 
@@ -13,47 +10,56 @@ MOSES, which stands for *Meta-Optimizing Semantic Evolution Search*,
 is an evolutionary program learner initially developed by Moshe Looks.
 It takes in input a problem description, and outputs a set of programs
 supposed to solve that problem.  A typical example is the problem of
-fitting data, in that case the problem description may be a table
-mapping inputs to outputs alongside a fitness function measuring how
-well a candidate fits that data.
+fitting data, in that case the problem description may be a table of
+inputs and outputs alongside a fitness function measuring how well a
+candidate fits that data.
 
 I believe the primary motivation behind the creation of MOSES came
 from the desire to adapt existing EDA (Estimation of Distribution
-Algorithm) methods to evolve programs instead of mere bitstrings.
-Upon investigating that space, Moshe (probably with the help of Ben)
-discovered that by combining a few tricks, evolving programs using EDA
-was actually competitive.  We'll come back to these tricks but, let me
-say that, as with anything, these tend to only work well under some
+Algorithm) methods to evolve programs instead of bitstrings.  Upon
+investigating that space, Moshe, with the help of Ben, discovered that
+by combining a few tricks, evolving programs using EDA was actually
+competitive.  We'll come back to these tricks but, let me say that, as
+with anything, these tricks tend to only work well under some
 assumptions, which will attempt to recall as well.
+
+In terms of performances, MOSES did achieve good results for its time
+for evolving programs restricted to Boolean expressions, and to a
+lesser extend programs involving more general programmatic constructs
+such as fold.  It performed poorly for programs involving floating
+point numbers (in spite of Moshe inventing a clever representation of
+numbers amenable to linkage discovery).  Later on it was also used to
+evolve programs controlling agents to perform imitation learning in
+virtual environments, with some good success.
 
 Initially, the target programming language (i.e. the representational
 language of the candidates being evolved) supported by MOSES was its
 own thing, called Combo and described by Moshe as "Lisp with a bad
 haircut".  Later on, as OpenCog Classic developed, the need to
 integrate MOSES more deeply into OpenCog Classic came to be, and the
-work of replacing Combo by Atomese, the language of OpenCog Classic
+task of replacing Combo by Atomese, the language of OpenCog Classic
 (the equivalent of MeTTa for Hyperon) was initiated.  The resulting
-product was called AS-MOSES, for AtomSpace-MOSES.  That endeavor
-however was never completed because the development effort was then
-shifted from OpenCog Classic to Hyperon.
+product was called AS-MOSES, for AtomSpace-MOSES.  That endeavor was
+never completed because the development effort was then shifted from
+OpenCog Classic to Hyperon.
 
 The repositories of MOSES can be found [here](URL) and that of
-AS-MOSES can be found [there](URL).  There are very similar, the main
+AS-MOSES can be found [there](URL).  There are quite similar, the main
 difference is that AS-MOSES contains some code for evolving Atomese
-programs beside Combo.  The AS-MOSES code base is, in some respects, a
-tiny bit cleaner, but also larger due to the additional Atomese
+programs beside Combo.  The AS-MOSES code base is, in some limited
+respects, a bit cleaner, but also larger due to the additional Atomese
 support.  In the rest of the document I will often mention MOSES while
 meaning either MOSES or AS-MOSES.
 
 ## The Goal of the Port
 
 I believe the goal of the port should not be to verbatimely reproduce
-AS-MOSES inside Hyperon.  The goal, in my opinion, should be to create
-a *sufficiently open-ended program learning framework that integrates
-well with the rest of Hyperon to enable some form of cognitive
-synergy*.  Indeed, even though AS-MOSES contains important innovations
-that we want to be ported, it largely misses the cognitive synergy
-aspect.
+AS-MOSES inside Hyperon.  The goal, in my opinion and ultimately,
+should be to create a *sufficiently open-ended program learning
+framework that integrates well with the rest of Hyperon to enable some
+form of cognitive synergy*.  Indeed, even though AS-MOSES contains
+important innovations that we want to be ported, it largely misses the
+cognitive synergy aspect.
 
 Pragmatically speaking, cognitive synergy here means that if MOSES
 gets stuck in the process of evolving programs, it can formulate a
@@ -62,10 +68,10 @@ to unstick itself.  Likewise, if other components of Hyperon are
 stuck, they can formulate requests of help to MOSES and take advantage
 of it.
 
-There are many ways such cognitive synergy could be realized, I will
-describe some that I like (or that at least I understand), but
-ultimately how to do that well, i.e. producing synergy as opposed to
-interference, is an open question.
+There are certainly many ways such cognitive synergy could be
+realized, I will describe some that I like (or that at least I
+understand), but ultimately how to do that well, i.e. producing
+synergy as opposed to interference, is an open question.
 
 There is also another form of synergy, perhaps just as important, the
 synergy between MOSES and users.  This could for instance be realized
@@ -759,9 +765,134 @@ are at least two ways this can be accomplished:
 
 ## Modularity
 
-Break up MOSES into subcomponents, using the same dependent types
-format.
+MOSES itself can be viewed as a collection of mind agents working in
+concert.  So maybe the same format suggested in Section Cognitive
+Synergy could be used as well.
+
+Let us provide an example for the reduction engine.  A call to the
+reduction engine in that format may look like
+
+```
+(reduce <RE_HYPER_PARAMETERS>
+        (: $cnd_prf (Σ (-> Bool Bool Bool)
+                       (ElegantNormalFormOf (λ z (s z) (and (s z) z))))))
+```
+
+where
+1. `reduce` is the entry point of the reduction engine.
+2. `<RE_HYPER_PARAMETERS>` is the set of hyper parameters for `reduce`.
+3. `(-> Bool Bool Bool)` is the type signature of the program to
+   reduce in normal form.
+4. `ElegantNormalFormOf` is a binary predicate represented as
+   parameterized type, in that case with the following type signature
+   `(-> (-> Bool Bool Bool) (-> (-> Bool Bool Bool) Type))`.  The
+   first argument is a boolean binary function, the candidate not yet
+   normalized, and the second candidate is the same candidate in
+   elegant normal form.  Not that the predicate is curried in order to
+   play nicely with `Σ`.
+5. `$cnd_prf` is an inhabitant of the sigma type, that is a dependent
+   pair with the candidate in elegant normal form as first argument,
+   which is merely `(λ z (s z) (and (s z) z))` in that example,
+   alongside the proof that it is indeed its elegant normal form.
+   Just like the prototype of evolutionary programming presented in
+   Evolution Programming Section, the proof does not have to be fully
+   fledged and can be substituted by a obfuscated process that we
+   simple trust.  Likewise the `ElegantNormalFormOf` predicate can
+   either provided as a built-in, with perhaps some rules and axioms
+   about it in an associated knowledge base, or provided as a
+   structured type containing in that structure the meaning of what it
+   is to be in elegant normal form.
+
+I should mention that the same format could also be used to represent
+data internally, which actually brings another avenue for fostering
+cognitive synergy.  Indeed, having internal representations follow a
+common language allows other mind agents to interact with that data as
+well.  For example MOSES may represent its populations of candidates
+as a collection of statements corresponding to the type relationships
+following the same query format
+
+```
+(: (λ z (s z) (not z)) (Σ (-> Bool Bool Bool) (FitMyData 0.2)))
+(: (λ z (s z) (or z (s z))) (Σ (-> Bool Bool Bool) (FitMyData 0.5)))
+(: (λ z (s z) (and z (s z))) (Σ (-> Bool Bool Bool) (FitMyData 0.8)))
+...
+```
+
+If that format may look overly verbose for the purpose of internal
+storage, please note that it might end-up being automatically
+compressed by the MeTTa backend (I believe MORK would offer that for
+instance), and if not, one could always realize such compression
+explicitely by contextualizing the representation, as demonstrated in
+a recent experiment on Modal Logic.
+
+## Beyond MOSES
+
+Since MOSES was invented, the field of evolutionary programming has
+advanced and there is no reason not to incorporate these advances into
+MOSES, as the iCog team in charge of porting MOSES to MeTTa have
+already started to explore.  Likewise, the existing components of
+MOSES can be improved.  As I already mentioned properly balancing
+exploration and exploitation in the EDA implementations is going to be
+important.  Other improvements should take place as well to help MOSES
+move beyond Boolean expressions.
+
+## Cognitive Synergy between MOSES and humans
+
+### Programming Assistance
+
+The advances of LLMs have brought advances in programming assistance.
+These however have deficiencies tied to the lack of use of formal
+methods to produce correct programs.  Before LLMs, programming
+assistance technologies existed but were reserved to the obscure world
+of Automated and Interactive Theorem Provers (ATP and IPT).  I believe
+MeTTa and Hyperon are bringing forth an opportunity to marry these two
+approaches into a coherent and efficient whole.  It is not clear to me
+how this is to be done properly but there are efforts within the
+SingularityNET Foundation that would help to turn that vision into a
+reality.  I would cite for instance the work done by the Semantic
+Parsing group, MeTTa-Motto as well as NARSE-GPT.
+
+I am personally not following the world of LLM based programming
+assistance, so I will not comment on that.  On the ATP/ITP side, the
+use of the Language Server Protocol (LSP) seems to have become a
+standard.  The MeTTaLog team happens to be developing an LSP server
+for MeTTa.  So one could envision to integrate MOSES, as well as some
+of its components such as the Reduction Engine, to that LSP server.
+
+I image the following scenario.  A MeTTa programmer wants to implement
+a function but has fragmented knowledge about it, maybe has partial
+knowledge about its inputs and outputs, as well as partial knowledge
+about its properties.  The programmer could enter a prompt containing
+examples of that functions, as well as expected properties, either in
+natural or formal language.  If provided in natural language the
+programmer assistant would come up with a formal specification (using
+for instance the type theoretic representation presented in this
+document as target language).  Then, after letting the programmer
+double check, would produce a query for MOSES, or whatever tool is
+appropriate for the job, send that query to the LSP server, and wait
+for it to return solutions to that query.  If that process is too
+resource demanding to run locally, the ASI Foundation could offer
+remote services.
+
+### Other Forms of Cognitive Synergies
+
+As MOSES is running to attempt to solve problems, it would be good if
+users can interact and guide MOSES.  For instance, one should be able
+to pause MOSES, read the content of its memory, and possibly modify
+that content.  Likewise, it would be convenient if users could place
+breakpoints at various locations in its code, so that when MOSES
+reaches these breakpoints, the user is given a change to overwrite the
+decision that MOSES would take next.  NEXT: it seems this should be
+generalized to MeTTa and Hyperon.
 
 ## Author
 
 Nil Geisweiller
+
+## Convert This Document to LaTeX
+
+To convert this document to LaTeX you may use the following command line
+
+```bash
+pandoc --from=markdown --to=latex --output=metta-port-highlevel-guide.tex metta-port-highlevel-guide.md
+```
