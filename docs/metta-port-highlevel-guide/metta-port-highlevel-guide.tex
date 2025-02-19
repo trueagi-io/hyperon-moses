@@ -21,19 +21,42 @@
 
 \begin{document}
 
-\title{High Level Guide of AS-MOSES port to Hyperon/MeTTa}
+\title{High Level Guide of AS-MOSES port to MeTTa}
 \author{Nil Geisweiller}
 \maketitle
 
 \begin{abstract}
 This document is a high level guide of the AS-MOSES port from OpenCog
-Classic to Hyperon/MeTTa.  It also discusses the notion of Cognitive
-Synergy in the context of MOSES as well as in the broader context.
+Classic to MeTTa.  It also discusses the notion of Cognitive Synergy
+in the context of MOSES as well as in the broader context.
 \end{abstract}
 
 \tableofcontents
 
 \chapter{Introduction}
+
+As the title suggests, this document is a high level guide of the
+AS-MOSES port from OpenCog Classic to MeTTa.  It is primarily
+addressed to the iCog team in charge of porting AS-MOSES to MeTTa.  In
+fact this very document exists because Yeabsera Derese, currently the
+lead of the AS-MOSES port project, asked me to write it.  As I started
+to write, it rapidly appeared that it required to treat somewhat
+thoroughly and broadly the aspect of cognitive synergy.  This actually
+makes the major part of the document.  Please, take it as an initial
+proposal though, and a proposal among many.  It is clear that for
+cognitive synergy to be realized effectively, it requires a concerted
+agreement across the creators (and users) of Hyperon, as well as an
+ongoing exploration.
+
+Because I want to make the point clear, let me quickly summarize the
+main idea of cognitive synergy I develop in this document.  The main
+idea is to replace handwritten heuristics appearing throughout the
+AS-MOSES code base by explicit logically formulated queries.
+Heuristics exist because the optimal choices are too difficult to
+make.  That is precisely where Hyperon comes to the rescue.  When a
+choice is too difficult and too impact-full, instead of offering a
+hardwired, rigid and ultimately incomplete solution, poke a hole, look
+outside and ask Hyperon, in its global wisdom, for help.
 
 \section{AS-MOSES, a brief history}
 
@@ -55,25 +78,34 @@ competitive.  We'll come back to these tricks but, let me say that, as
 with anything, these tricks tend to only work well under some
 assumptions, which will attempt to recall as well.
 
+At some point Moshe left, and Linas Vepstas and I took over the MOSES
+code base, added a number of improvements such as stochastic
+hillclimbing, crossover, diversity pressure and more.  We, however
+never got a chance to improve the EDA part (remaining stuck in an
+somewhat incomplete stage), which is probably regrettable because, I
+believe, if done well, this method has a lot to offer.  I do not
+expand much about improving EDA in this document, only offers a few
+hints.  Maybe this subject deserves a future document of its own.
+
 In terms of performances, MOSES did achieve good results for its time
-for evolving programs restricted to Boolean expressions, and to a
-lesser extend programs involving more general programmatic constructs
-such as fold.  It performed poorly for programs involving floating
-point numbers (in spite of Moshe inventing a clever representation of
-numbers amenable to linkage learning).  Later on it was also used to
-evolve programs controlling agents to perform imitation learning in
-virtual environments, with some amount of success.
+for evolving programs restricted to Boolean expressions.  It performed
+poorly for programs involving floating point numbers (in spite of
+Moshe inventing a clever representation of numbers amenable to linkage
+learning).  Later on, it was also used to evolve programs controlling
+agents to perform imitation learning in virtual environments, with
+some amount of success.
 
 Initially, the target programming language (i.e. the representational
 language of the candidates being evolved) supported by MOSES was its
 own thing, called Combo and described by Moshe as "Lisp with a bad
 haircut".  Later on, as OpenCog Classic developed, the need to
-integrate MOSES more deeply into OpenCog Classic came to be, and the
+integrate MOSES more deeply into OpenCog Classic came to be.  And the
 task of replacing Combo by Atomese, the language of OpenCog Classic
-(the equivalent of MeTTa for Hyperon) was initiated.  The result was
-called AS-MOSES, for AtomSpace-MOSES.  That endeavor was never
-completed because the development effort was then shifted from OpenCog
-Classic to Hyperon.
+(the equivalent of MeTTa for Hyperon) was initiated, carried out, for
+the most part, by Kasim Ebrahim.  The result was called AS-MOSES, for
+AtomSpace-MOSES.  That endeavor was never completed because Kasim
+left, and the development effort was shifting from OpenCog Classic to
+Hyperon anyway.
 
 The repositories of MOSES can be found here~\cite{MOSES} and that of
 AS-MOSES can be found there~\cite{ASMOSES}.  There are quite similar.
@@ -81,17 +113,21 @@ The main difference is that AS-MOSES contains some code for evolving
 Atomese programs beside Combo.  The AS-MOSES code base is, in some
 limited respects, a bit cleaner, but also larger due to the additional
 Atomese support.  In the rest of the document I will often mention
-MOSES while meaning either MOSES or AS-MOSES.
+MOSES while meaning either MOSES or AS-MOSES, or MOSES Classic to
+denote versions coming from OpenCog Classic as opposed to future
+Hyperon versions.
 
 \section{The Goal of the Port}
 
 I believe the goal of the port should not be to verbatimely reproduce
-AS-MOSES inside Hyperon.  The goal, in my opinion, should be to create
-a \emph{sufficiently open-ended program learning framework that
-integrates well with the rest of Hyperon to enable some form of
-cognitive synergy}.  Indeed, even though AS-MOSES contains important
-innovations that we want to be ported, it misses the cognitive synergy
-aspect.
+AS-MOSES inside Hyperon.  The goal, in my opinion, should be\\
+
+\emph{To create a sufficiently open-ended program learning framework
+that integrates well with the rest of Hyperon to enable some form of
+cognitive synergy}.\\
+
+Indeed, even though AS-MOSES contains important innovations that we
+want to be ported, it essentially misses the cognitive synergy aspect.
 
 Pragmatically speaking, cognitive synergy here means that if MOSES
 gets stuck in the process of evolving programs, it can formulate a
@@ -99,54 +135,65 @@ request of help to the rest of Hyperon and take advantage of it to
 unstick itself.  Likewise, if other components of Hyperon are stuck,
 they can formulate requests of help to MOSES and take advantage of it.
 There are certainly many ways such cognitive synergy could be
-realized, I will describe some that I like (or that at least I
-understand), but ultimately how to do that well, i.e. producing
-synergy as opposed to interference, is an open question.
+realized, I will describe one that I like, or that at least I
+understand, but ultimately how to do that well, i.e. producing synergy
+as opposed to interference, remains an open question.
 
 There is also another form of synergy, perhaps just as important, the
-synergy between MOSES and its users.  This could for instance be
-realized by integrating MOSES to a MeTTa LSP server.  More will be
-said on that further below.
+synergy between MOSES and its users.  This could for instance take the
+form of integrating MOSES to the MeTTa LSP server.  More will be said
+on that further below.
 
 \chapter{Porting MOSES Classic}
 
-\section{MOSES's Secret Sauce}
+\section{MOSES Secret Sauce}
 
 Let me briefly recall the main tricks that contributed to make MOSES
 competitive.
 
 \begin{enumerate}
-\item Reduce candidates to normal form.  That trick consists in applying
-rules to transform candidates into some (ideally unique) canonical
-form while preserving semantics.  For example `(and y x)` would become
-`(and x y)`, thus if MOSES generates both `(and x y)` and `(and y x)`,
-after reduction they would both point to the same candidate.  This has
-the following advantages:
+\item Reduce candidates to normal form.  That trick consists in
+  applying rewriting rules to transform candidates into some (ideally
+  unique) canonical form while preserving semantics.  For example
+  \mintinline{scheme}{(and y x)} would become
+  \mintinline{scheme}{(and x y)}, thus if MOSES generates both
+  \mintinline{scheme}{(and x y)} and
+  \mintinline{scheme}{(and y x)},
+  after reduction they would both point to the same candidate.  This
+  has the following advantages:
 \begin{enumerate}
 \item Avoid re-evaluating syntactically different, yet semantically
-identical candidates, saving resources in the process.
-\item Candidates that are more consistently
-formatted are also easier to recombine meaningfully.
-\item Increase syntactic vs semantics correlation.  It is possible
-to design reduction rules so that candidates that are syntactically
-similar are more likely to be semantically similar.  This has the
-effect of making the fitness landscape less chaotic, therefore less
-deceptive.  The Elegant Normal Form happens to have such property.
+  identical candidates, saving resources in the process.
+\item Candidates that are more consistently formatted are also easier
+  to recombine meaningfully.
+\item Increase syntactic versus semantics correlation.  It is possible
+  to design reduction rules so that candidates that are syntactically
+  similar after reduction are also more likely to be semantically
+  similar.  This has the effect of making the fitness landscape less
+  chaotic, therefore less deceptive.  The Elegant Normal Form, used in
+  the reduction engine for Boolean expressions, happens to have such
+  property.  It also happens to have the property of not utterly
+  destroying the hierarchical structure of an expression, making it
+  more suitable for modular recombination.  This is aligned with of
+  one of the core assumptions underlying MOSES success, which is that
+  the problems we care about tend to be decomposable.
 \end{enumerate}
-\item Locally vectorize the search space.  Given an exemplar candidate,
-MOSES generates a program subspace around that candidate, called a
-deme.  Such subspace happens to be a vector space, thus amenable to a
-battery of optimization techniques, including EDAs and cross-over.
-Upon optimizing a deme, MOSES collects promising candidates that can
-subsequently be used as exemplars to spawn more demes.
-\item Vectorize the fitness.  Instead of reducing the fitness to a single
-number, the fitness can be represented as a vector of components, thus
-providing some support for multi-objective optimization.  For example,
-MOSES can asked to retain only the Pareto front of a population.
-Additionally, diversity pressure can be applied during search by
-taking into account the distance between such multi-objective scores.
-Typically, component would represent the fitness of the candidate for
-each data point, as opposed to just its aggregated fitness.
+\item Locally vectorize the search space.  Given an exemplar
+  candidate, MOSES generates a program subspace around that candidate,
+  called a deme.  Such subspace happens to be a vector space, thus
+  amenable to a battery of optimization techniques, including EDAs,
+  hillclimbing, cross-over and more.  Upon optimizing a deme, MOSES
+  collects promising candidates that can subsequently be used as
+  exemplars to spawn more demes.
+\item Vectorize the fitness.  Instead of reducing the fitness to a
+  single number, the fitness can be represented as a vector of
+  components, thus providing some support for multi-objective
+  optimization.  For example, MOSES can be asked to retain only the
+  Pareto front of a population.  Additionally, diversity pressure can
+  be applied during search by taking into account the distance between
+  these vectorized behavioral-like scores.  Typically, in MOSES
+  components would represent the fitness of the candidate for each
+  data point, as opposed to just its aggregated fitness.
 \end{enumerate}
 
 As always, it was observed that these tricks could speed-up evolution
@@ -160,77 +207,80 @@ constitute a good starting point for porting to Hyperon.  Let me
 provide some high-level guidance in that respect.
 
 \begin{enumerate}
-\item Reduce candidates to normal form.  I believe this can be elegantly
-ported using either the native MeTTa pattern-based interpreter, or the
-chaining technology developed here~\cite{Chaining}\footnote{One
-technical problem when doing so is that program variables can be
-confused with program holes during evaluation or chaining.  Using De
-Bruijn index is one way to address that problem.}  It does require to
-redefine the Elegant Normal Form algorithm as an explicit set of
-rewriting rules.  I believe it is worth the effort because it may then
-offert more flexibility and extendability.  Indeed, some problems
-require weaker or stronger forms of reduction.  By breaking down a
-monolithic implementation into rules, one can more easily assemble
-subset of rules to control the reduction strength on a per situation
-basis.  Also, by reframing reduction as a form of reasoning, it opens
-the door to more flexible hybridization between evolution and
-reasoning.
-\item Locally vectorize the search space (aka representation building).
+\item Reduce candidates to normal form.  I believe this can be
+  elegantly ported using either the native MeTTa pattern-based
+  interpreter, or the chaining technology developed here.  One
+  technical difficulty when doing so is that program variables can be
+  confused with program holes during reduction (via evaluation or
+  chaining).  Using De Bruijn index would be one way to address that
+  problem.  Them, it requires to decompose the Elegant Normal Form
+  algorithm as an explicit set of rewriting rules.  I believe it is
+  worth the effort because it may then offert more flexibility and
+  extendability.  Indeed, some problems require weaker or stronger
+  forms of reduction.  By breaking down a monolithic implementation
+  into rules, one can more easily assemble subset of rules to control
+  the reduction strength on a per situation basis.  Some of these
+  rules can more easily be generalized to domains beyond Boolean
+  expressions.  Finally, reframing reduction as a form of reasoning
+  opens the door to more flexible hybridization between evolution and
+  reasoning.
+\item Locally vectorize the search space (aka representation building
+  in MOSES).
 \begin{enumerate}
-\item Even though vectorizing the search space is a convenient and powerful
-way to represent a space to optimize, the port should not be reduced
-only to that.  It has indeed some drawbacks, one being that what is
-learned in a local representation is not necessarily easy to transfer
-to other representations.  Indeed, the wisdom accumulated while
-searching a deme should ideally be transferable to other demes.  In
-the OpenCog Classic version, EDA was taking the form of learning a
-Bayesian Network over the components of that vector space.  But since
-the semantics of each component was not the same for other vector
-spaces, the knowledge accumulated during the optimization of a deme
-would not be directly transferable to other demes.  Thus I recommand
-to port that aspect but also to explore other, more global,
-representations (as the iCog team has already started).
+\item Even though vectorizing the search space is a convenient and
+  powerful way to represent a space to optimize, the port should also
+  explore beyond that.  Vectorizing has also drawbacks, one being that
+  what is learned in a local representation is not necessarily easy to
+  transfer to other representations.  Indeed, the wisdom accumulated
+  while searching a deme should ideally be transferable to other
+  demes.  For instance, in MOSES Classic, EDA was taking the form of
+  learning a Bayesian Network over the components of that vector
+  space.  But since the semantics of each component was not the same
+  for other vector spaces, the knowledge accumulated during the
+  optimization of a deme would not be directly transferable to other
+  demes.  I thus recommand to port that aspect but also to explore
+  other, perhaps more global, representations (as the iCog team has
+  already started).
 \item Also, the Bayesian learning phase did not take into account the
-confidence of the probabilities learned, which in turn made it
-difficult to properly balance exploration and exploitation during the
-sampling phase.  PLN, which has a native support for confidence, could
-potentially be used as a replacement.  By the way, MOSES implemented
-some form of stochastic hillclimbing as well (which was often
-preferably used due to its low overhead).  There are certainly
-promising avenues to combine EDA and hillclimbing.  I believe the
-litterature already contains such ideas.
-\item I should mention that when vectorizing a program space, there is an
-inherant tension between expressivity and regularity.  The more
-expressively dense a representation is, the more deceptive it likely
-is as well, so vectorizing should be flexible and easily
-reprogrammable as well.  Among the set of possibilities, perhaps the
-following paper could be relevant~\cite{Alon2019}.  Likewise, there is
-the problem of minimizing over-representation in that vector space,
-meaning that ideally one vector should correspond to one candidate.
-MOSES contains heuristics to minimize that form of over-representation
-involving the use of the reduction engine to discard dimensions in
-that vector at representation building time.
+  confidence of the probabilities learned, which in turn made it
+  difficult to properly balance exploration and exploitation during
+  the sampling phase.  PLN, which has a native support for confidence,
+  could potentially be used as a replacement.  There are certainly
+  also promising avenues to explore to combine EDA and hillclimbing.
+  I believe the litterature already contains such research.
+\item I should mention that when vectorizing a program subspace, there
+  is an inherant tension between expressivity and regularity.  The
+  more expressively dense a representation is, the more deceptive it
+  likely is as well, so vectorizing should be flexible and easily
+  reprogrammable.  Among the set of possibilities, perhaps the
+  following paper could be relevant~\cite{Alon2019}.  Likewise, there
+  is the problem of minimizing over-representation in that vector
+  space, meaning that ideally one vector should correspond to one
+  candidate.  MOSES contains heuristics to minimize that form of
+  over-representation by cleverly using, albeit heuristically as well,
+  the reduction engine to discard dimensions at representation
+  building time.
 \end{enumerate}
-\item Vectorize the fitness.  I think MOSES did a good job there and it
-can probably be ported almost as it is.  There are a number of
-diversity distances that could be ported as well.  Although to be
-perfectly clear, as every hyper-parameters in MOSES, choosing when and
-when not to use such diversity pressures is difficult.  For instance,
-retaining only the Pareto front would speed up the search for some
-problems, but slow it down for some others.  Same thing for diversity
-pressure and other hyper-parameters related to diversity.  The MOSES and AS-MOSES reporRegarding
-porting the various fitness functions, there is something that can be
-brought to the next level though, which is to treat the fitness as a
-clear box as opposed to a black box.  See Section [Black box vs clear
-box](black-box-vs-clear-box) for a discussion on the matter.
+\item Vectorize the fitness.  I think MOSES did a good job there and
+  it can probably be ported as it is.  There are a number of diversity
+  distances that could be ported as well.  Although to be perfectly
+  clear, as every hyper-parameters in MOSES, choosing when and when
+  not to use such diversity pressures is difficult.  For instance,
+  retaining only the Pareto front would speed up the search for some
+  problems, but slow it down for some others.  Same thing for
+  diversity pressure and other diversity related hyper-parameters.
+  Regarding fitness functions, there is something that can be pushed
+  to the next level though, to not only decompose fitness into
+  multiple components but to make the whole fitness a clear box,
+  amenable to analysis and reasoning, as opposed to an opaque black
+  box only used for candidate evaluation.  See Section
+  \ref{sec:blackbox-clearbox} for a discussion on the matter.
 \end{enumerate}
 
-\chapter{Beyond MOSES Classic}
+\chapter{Cognitive Synergy}
 
-\section{Cognitive Synergy}
-
-\subsection{Cognitive Synergy between MOSES and Hyperon}
-How can MOSES be helped by Hyperon?  First, any hyperparameters
+\section{Realizing Cognitive Synergy between MOSES and Hyperon}
+How can MOSES be helped by Hyperon?  First, any hyper-parameters
 controlling MOSES, such as for instance the portion of evaluations
 that should be allocated to search any particular deme, can
 potentially be tuned by Hyperon.  Second, a big help would probably go
@@ -530,6 +580,7 @@ Hyperon to guide MOSES during the fifth run by making it take the
 branch with the likely better outcome.
 
 \section{Black Box vs Clear Box}
+\label{sec:blackbox-clearbox}
 
 The most basic way to use a fitness function is as a black box that
 can score candidate solutions and nothing more.  That is likely the
@@ -886,7 +937,7 @@ storage, note that it might end-up being automatically compressed by
 the MeTTa backend (I believe MORK would offer that for instance).  And
 if not, one could always realize such compression explicitely by
 contextualizing the representation, as demonstrated in a recent
-experiment on Modal Logic~\cite{.
+experiment on Modal Logic~\cite{ModalLogic}.
 
 \section{Beyond MOSES}
 
