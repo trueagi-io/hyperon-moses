@@ -72,11 +72,11 @@ candidate fits that data.
 I believe the primary motivation behind the creation of MOSES came
 from the desire to adapt existing EDA (Estimation of Distribution
 Algorithm) methods to evolve programs instead of bitstrings.  Upon
-investigating that space, Moshe, with the help of Ben, discovered that
-by combining a few tricks, evolving programs using EDA was actually
-competitive.  We'll come back to these tricks but, let me say that, as
-with anything, these tricks tend to only work well under some
-assumptions, which will attempt to recall as well.
+investigating that space, Moshe, with the help of Ben Goertzel,
+discovered that by combining a few tricks, evolving programs using EDA
+was actually competitive.  We'll come back to these tricks but, let me
+say that, as with anything, these tricks tend to only work well under
+some assumptions, which will attempt to recall as well.
 
 At some point Moshe left, and Linas Vepstas and I took over the MOSES
 code base, added a number of improvements such as stochastic
@@ -289,19 +289,31 @@ to the optimization phase.  This is after all where most of the
 computational resources are spent.  Selecting the right optimization
 algorithm for the right problem is an example (which may fall under
 the hyper-parameter tuning aspect depending on how it is implemented,
-in fact most hyper-parameters could have an \texttt{auto} setting wish
+most hyper-parameters could in fact have an \texttt{auto} setting wish
 would allow MOSES to query Hyperon's wisdom on the fly).  If the
 optimization algorithm is EDA-based, an important avenue for help is
 in modelling the fitness landscape, which, as mentioned above could
 use PLN.  There is also the problem of transfering knowledge across
 demes, and ultimately across problems as well.  For instance ideally
 the wisdom accumulated to effectively sample a deme should not be
-thrown away when a new deme is created.
+thrown away when a new deme is created.  Speaking of sampling, I want
+to briefly mention an idea suggested by Ben a while ago that remains
+quite relevant to Cognitive Synergy and the approach suggested in that
+document.  The idea is to frame problem solving as queries to a
+universal sampler, called \emph{SampleLink}, concentrating in one
+entry point the wisdom and solving capability of the whole system.
+Here, we do not make commitments as to whether that solver should be
+or not presented as a sampler, but the idea of funneling problem
+solving towards a converging point remains.  One may well be tempted
+to draw parallels between this and Tononi's Integrated Information
+Theory, or more generally and philosophically speaking, the concept of
+self-consciousness.  But, as tempting as it is, we will not do that
+here.
 
 So how to achieve that?  The main idea suggested here would be for
 MOSES to query Hyperon for knowledge capturing the relationships
 between problem, state of the search, direction to pursue and expected
-outcome.  For instance in the context of hyper-parameter tuning, such
+outcomes.  For instance in the context of hyper-parameter tuning, such
 query may look like\\
 
 \emph{Given problem $\pi$, find me a range for hyper-parameter $f$
@@ -314,9 +326,9 @@ range $r$, MOSES is expected to achieve greater than average
 performance with probably $\rho$}.\\
 
 The querying mechanism would then be able to use that knowledge to
-infer, given that $\pi$ has property $p$, hyper-parameter $f$ should
-be set to a value within range $r$.  The same idea would apply to
-finer aspects of the behavior of MOSES, such as those pertaining to
+infer, given that $\pi$ has property $p$, that hyper-parameter $f$
+should be set to a value within range $r$.  The same idea would apply
+to finer aspects of the behavior of MOSES, such as those pertaining to
 optimization.  In the case of EDA-based optimization, such knowledge
 could look like\\
 
@@ -324,34 +336,23 @@ could look like\\
 $o_1$ at location $l_1$ and operator $o_2$ at location $l_2$, it is
 likely to be good fit with probably $\rho$}.\\
 
-Then the EDA procedure could, at particular phases, query the
-atomspace for such wisdom.  If none is retreived then it would proceed
-as usual, but if some is then it would be able to take advantage of it
-and diverge from its default behavior.
+The EDA procedure could, at particular stages, query the atomspace for
+such wisdom.  If none is retreived, then it would proceed as usual,
+but if some is, then it would be able to take advantage of it and
+depart from its default behavior.
 
 What logic should be used to formulate that wisdom is an open
 question.  PLN is an obvious candidate, so would be some type
 theoretic formalism, in fact both are likely to converge at some
 point.  How that knowledge would be acquired is a vast subject, but in
 essence this task would be delegated to Hyperon as a meta-learning
-process.\\
-
-%% % NEXT what to do with this
-%% An alternate, though somewhat equivalent in spirit way, suggested by
-%% Ben Goertzel a while ago would be to formulate tasks as calls to a
-%% universal sampler (a function able to sample any distribution layered
-%% with any constraint), called SampleLink~\cite{SampleLink}.  The
-%% difficulty then comes does down to providing an implementation of such
-%% universal sampler that can utilize Hyperon accumulated wisdom.
-
-When can MOSES run in ``automated pilot'' mode and when should it
-query the wisdom of Hyperon?  I suppose the rule of thumb to follow
-would be\\
+process.  When should MOSES run in auto-pilot and when should it query
+the wisdom of Hyperon?  I suppose a rule of thumb to follow would be\\
 
 \emph{When the decision is hard to make, ask Hyperon for help}.\\
 
-Let me give another example, let us say there is a certain conditional
-somewhere in the code base of MOSES
+Let me give another example.  Let us say there is a certain
+conditional somewhere in the code base of MOSES
 
 \begin{minted}[mathescape]{scheme}
                            (if C B1 B2)
@@ -373,29 +374,29 @@ back-end, should be fairly efficient.  Thus the idea would be\\
 
 \emph{If Hyperon already knows the answer, then it can help MOSES on
 the spot by simply finding a match answering the query, at little to
-no cost.  Otherwise, if it cannot not help, MOSES defers to a default
-behavior, but Hyperon keeps a trace of the interaction for future
-improvements.}\\
+virtually no cost.  Otherwise, if it cannot not help, MOSES defers to
+a default behavior, but Hyperon keeps a trace of the interaction for
+future improvements.}\\
 
 A more sophisticated notion of \emph{querying Hyperon} can be extended
 by introducing chaining.  In that case \emph{pattern matching query}
-would be replaced by, likely a shallow and inexpensive form of,
+would be replaced by, likely shallow and inexpensive forms of,
 \emph{reasoning}.  It means however that the effort spent in such
-reasoning needs to be properly controlled.  That could be done by for
-instance by guarantying some temporal upper bound as to make reasoning
-about the overall efficiency of MOSES easier.\\
+reasoning needs to be properly controlled.  That could be achieved by
+for instance guarantying that some temporal upper bounds are met to
+make meta-reasoning about the overall efficiency of MOSES easier.\\
 
 Next, how can MOSES helps Hyperon? Any problem that is formulated as
-being solved by finding programs maximizing some fitness function
-could in principle be solved by MOSES.  Of course MOSES will tend to
-perform better on some problems and worse on others.  So, determining
-whether MOSES can help in some particular situation amounts to being
-able to formulate the proper fitness function and then evaluate how
-efficient MOSES can operate on that fitness function, knowledge that
-Hyperon should progressively accumulate and use to help other Hyperon
-processes.  As side note, one may note that MOSES could in principle
-discover pattern inside its own traces.  Thus by applying MOSES at the
-meta-level, MOSES could in fact help itself.
+solved by finding programs maximizing some fitness function could in
+principle be solved by MOSES.  Of course MOSES will tend to perform
+better on some problems and worse on others.  So, determining whether
+MOSES can help in some particular situation amounts to being able to
+formulate the proper fitness function and then evaluate how efficient
+MOSES can operate on it, which is a knowledge that Hyperon should
+progressively build up and use to help other Hyperon processes.  As a
+side note, MOSES could in principle discover patterns inside its own
+traces.  Thus by applying MOSES at the meta-level, MOSES could in fact
+help itself.
 
 \section{The Case for a Common Language}
 
