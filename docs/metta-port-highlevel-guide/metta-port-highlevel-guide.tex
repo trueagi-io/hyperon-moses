@@ -405,19 +405,20 @@ What I am going to present is simply the use of a common language to
 communicate between parts of Hyperon.  Let me reuse the old notion of
 \emph{Mind Agents} from OpenCog Classic to denote such parts,
 cognitive processes operating within an Hyperon ecosystem.  Mind
-agents would be for instance MOSES, ECAN, a chainer running PLN, etc.
-The idea is that all mind agents would share a common language to
-formulate requests of help to each others.  An obvious choice of
-language within Hyperon is MeTTa, but there are many ways MeTTa can be
-used to formulate such queries.  Whether it is premature or not to
-make that choice, for expository purpose and to get started with
-something, I will settle down to a specific formalism based on
-Dependent Types for the rest of the document.  I am not necessarily
-advocating this formalism to be the long term solution, even though I
-believe it is a good choice to begin with.  Again, PLN, whichever form
-it might take in the future, could be a longer term choice for such
-common language.  But for now, let me explain how such dependently
-typed language for MeTTa can be used for cognitive synergy.
+agents would be for instance MOSES, ECAN, a frequent subgraph pattern
+miner, a chainer running PLN, etc.  The idea is that all mind agents
+would share a common language to formulate requests of help to each
+others.  An obvious choice of language within Hyperon is MeTTa, but
+there are many ways MeTTa can be used to formulate such queries.
+Whether it is premature or not to make that choice, for expository
+purpose and to get started with something, I will settle down to a
+specific formalism based on Dependent Types for the rest of the
+document.  I am not necessarily advocating this formalism to be the
+long term solution, even though I believe it is a good choice to begin
+with.  Again, PLN, whichever form it might take in the future, could
+be a longer term choice for such common language.  But for now, let me
+explain how such dependently typed language for MeTTa can be used for
+cognitive synergy.
 
 The idea would be that when calling a mind agent, the description of
 the problem to solve would be provided in that common language.  In a
@@ -508,7 +509,7 @@ takes a binary boolean function and returns a type.  This is a common
 way to represent predicates in Dependently Typed Languages.\\
 
 Maybe one realizes that MOSES is in fact inadequate to discover such
-candidate, and decides to try the backward chainer instead
+candidate and decides to try the backward chainer instead
 
 \begin{minted}{scheme}
 (bc BC_HYPER_PARAMETERS
@@ -516,13 +517,17 @@ candidate, and decides to try the backward chainer instead
 \end{minted}
 As you can see the call is almost the same, only the function being
 called and its hyper-parameters are different, the query is identical.
+Another example would be if the user wants to discover patterns over a
+corpus of subtrees.  In that case using the pattern miner will be far
+for effective that using MOSES, but the query to express the problem
+will be the same in both cases.\\
 
-But the use of that common language does not stop here as mind agents
-can use such querying format internally.  Let's say for instance that
-MOSES, within the course of its execution has an important decision to
-make, having for instance to decide whether to search a given deme
-more deeply or abandon that deme and create a new one.  A rough sketch
-of the code may look like:
+The use of such common language does not stop here however, mind
+agents can use this querying format internally.  Let's say for
+instance that MOSES, within the course of its execution, has an
+important decision to make, having for instance to decide whether to
+search a given deme more deeply or abandon that deme and create a new
+one.  A rough sketch of the code may look like:
 
 \begin{minted}{scheme}
 (= (moses $hps $query)
@@ -534,8 +539,8 @@ of the code may look like:
 \end{minted}
 The idea is that instead of having
 \mintinline{scheme}{continue-search-deme} make that decision by
-itself, MOSES can formulate that question to Hyperon.  If Hyperon
-knows the answer, then MOSES can take advantance of that knowledge,
+itself, MOSES can formulate a corresponding question to Hyperon.  If
+Hyperon knows the answer, MOSES can take advantage of this knowledge,
 otherwise it can defer to a default behavior.  What it means is that
 the code of \mintinline{scheme}{continue-search-deme}, instead of
 solely consisting of hardwired heuristics, may contain queries such as
@@ -545,7 +550,7 @@ solely consisting of hardwired heuristics, may contain queries such as
 \end{minted}
 Here the backward chainer is used as example because it is assumed to
 be somewhat universal.  Maybe we want to have an even more universal
-access point such as \mintinline{scheme}{hyperon}, which is
+access point such as \mintinline{scheme}{hyperon}, which is quite
 reminiscent to the \emph{SampleLink} idea.  Regardless, typically such
 queries will be parameterized to have low costs, as to not slow down
 MOSES in its progress.  For instance the depth of reasoning used to
@@ -553,7 +558,7 @@ answer could be practically null, keeping the reasoning shallow and
 inexpensive, if any.  That way, if Hyperon knows the answer it can
 help MOSES right away, otherwise, a record of its inability to answer
 can be kept and used as feedback to incentivize Hyperon to learn to
-how to in the future.
+how to help in the future.
 
 One could envision a scenario where MOSES is being called on a series
 of problems, while in the background other mind agents operate some
