@@ -403,114 +403,115 @@ help itself.
 As I said there are multiple ways cognitive synergy can be realized.
 What I am going to present is simply the use of a common language to
 communicate between parts of Hyperon.  Let me reuse the old notion of
-*mind agent* from OpenCog Classic, as cognitive process that would
-operate within Hyperon.  Mind agents would be for instance MOSES, the
-backward chainer, ECAN, etc.  So the idea is that all mind agents
-share a common language to formulate requests of help to each others.
-Which brings the question of what language to use.
+\emph{Mind Agents} from OpenCog Classic to denote such parts,
+cognitive processes operating within an Hyperon ecosystem.  Mind
+agents would be for instance MOSES, ECAN, a chainer running PLN, etc.
+The idea is that all mind agents would share a common language to
+formulate requests of help to each others.  An obvious choice of
+language within Hyperon is MeTTa, but there are many ways MeTTa can be
+used to formulate such queries.  Whether it is premature or not to
+make that choice, for expository purpose and to get started with
+something, I will settle down to a specific formalism based on
+Dependent Types for the rest of the document.  I am not necessarily
+advocating this formalism to be the long term solution, even though I
+believe it is a good choice to begin with.  Again, PLN, whichever form
+it might take in the future, could be a longer term choice for such
+common language.  But for now, let me explain how such dependently
+typed language for MeTTa can be used for cognitive synergy.
 
-Of course the answer is MeTTa, but there are many ways MeTTa can be
-used.  So more specifically, for starter, I suggest to borrow standard
-constructs from Dependently Typed Languages, such as dependent sums
-and products.  To be clear, I am not necessarily advocating that we
-use such a language in the long term, even though I believe it is a
-good start due to its expressive power and popularity.  But it also
-has drawbacks, probably the main one being that it is based on a crisp
-typing relationship.  So we may for instance want to replace that by
-some probabilistic extension as explored by Jonathan Warrell, Greg
-Meredith and Mike Stay.  Of course, one ought to mention PLN as a
-potential candidate as well.  PLN was in fact the primary candidate
-for such common language back in the OpenCog Classic days, but with
-the recent developments of probabilistic dependent types that question
-requires reconsiderations.  PLN has also some drawbacks, one being
-that, at least as formulated in the PLN book, it is non-constructive,
-unlike dependent types.  But it is conceivable that a future version
-of PLN, built on top of such probabilistically dependently typed
-languages, may become once again that common language.  These
-questions will need to be carefully re-examined as conceptual and
-technical progress are being made.  For now let me simply explain how
-such common language, as a regular dependently typed language crafted
-for MeTTa, can be used for cognitive synergy.
-
-The idea would be that when calling a mind-agent, the description of
-the problem to solve is provided in that common language.  So, it does
-not matter if the mind agent is MOSES, the backward chainer, or
-something else, the query would essentially look the same.  That
-approach is reminiscent to Ben Goertzel `SampleLink` idea, but
-materialized somewhat more conventially, using type theoretic query
-answering at the center rather than sampling.  Which does not exclude,
-far from it, to re-introduce explicit forms of sampling later on.  So
-the basic format for calling such mind agent would be as follows
+The idea would be that when calling a mind agent, the description of
+the problem to solve would be provided in that common language.  In a
+way, it would not matter if the mind agent is MOSES, a chainer, or
+something else, the query would essentially look the same.  The basic
+format for calling such mind agent could be
 
 \begin{minted}[mathescape]{scheme}
-(MIND_AGENT HYPER_PARAMETER QUERY)
+(MIND_AGENT HYPER_PARAMETERS QUERY)
 \end{minted}
 where
 \begin{itemize}
-\item \mintinline{scheme}{MIND_AGENT} is a MeTTa function, such as \mintinline{scheme}{moses},
-for MOSES, or \mintinline{scheme}{bc} for the backward chainer, etc.
-\item \mintinline{scheme}{HYPER_PARAMETER} is a data structure containing all the
-  hyper-parameter for the call.  That structure would contain for
-  instance the effort to allocate, various default heuristics, how
-  much complexity pressure to apply, pointers to spaces containing
-  meta-knowledge, etc.
-\item \mintinline{scheme}{QUERY} is the query itself, a description of the problem to
-  solve.  That description does not necessarily have to be big and
-  complex because it can take advantage of a vocabulary defined in
-  spaces referenced inside the \mintinline{scheme}{HYPER_PARAMETER} structure.
+\item \mintinline{scheme}{MIND_AGENT} is a MeTTa function, such as
+  \mintinline{scheme}{moses}, for MOSES, or \mintinline{scheme}{bc}
+  for the backward chainer, etc.
+\item \mintinline{scheme}{HYPER_PARAMETERS} is a data structure
+  containing all the hyper-parameters for the call.  That structure
+  would contain for instance various default heuristics, how much
+  simplicity or diversity pressure to apply, various references to
+  spaces containing relevant knowledge, etc.
+\item \mintinline{scheme}{QUERY} is the query itself, a description of
+  the problem to solve.  That description does not necessarily have to
+  be big and complex because it can take advantage of a vocabulary
+  defined in spaces referenced inside the
+  \mintinline{scheme}{HYPER_PARAMETERS} structure.
 \end{itemize}
 
 For instance, if one wishes to evolve a program computing a binary
 function that fits a certain data set, one may express that with
 
 \begin{minted}{scheme}
-(moses MOSES_HYPER_PARAMETER
+(moses MOSES_HYPER_PARAMETERS
        (: $cnd_prf (Σ (-> Bool Bool Bool) (FitMyData $fitness))))
 \end{minted}
 where
 \begin{itemize}
-\item \mintinline{scheme}{(-> Bool Bool Bool)} is the type signature of the candidate we are
-  look for.
-\item \mintinline{scheme}{FitMyData} is a parameterized type representing a particular custom
-  fitness measure.  For the query to be understood, \mintinline{scheme}{FitMyData} must
-  be defined in a space referenced inside \mintinline{scheme}{MOSES_HYPER_PARAMETER}.
-\item \mintinline{scheme}{$fitness} is a MeTTa variable representing a hole in the query to
-  be determined by MOSES for each candidate, corresponding to the
-  actual fitness score of that candidate.
-\item \mintinline{scheme}{Σ} is the Sigma type, aka dependent sum, expressing the existence of
-  such candidates in a constructive manner.
-\item \mintinline{scheme}{$cnd_prf} is a hole representing an inhabitant of that sigma type,
-  which, upon answering the query, should contain both the candidate
-  and the proof that this candidate fulfills the query.  If more than
-  one such candidate exists, then the result should be a superposition
-  of the inhabitants.
+\item \mintinline{scheme}{MOSES_HYPER_PARAMETERS} is a structure, left
+  undefined for now, containing all hyper-parameters of MOSES, .
+\item \mintinline{scheme}{(-> Bool Bool Bool)} is the type signature
+  of the candidate we are look for.
+\item \mintinline{scheme}{FitMyData} is a parameterized type
+  representing a particular custom fitness measure.  For the query to
+  be understood, \mintinline{scheme}{FitMyData} must be defined in a
+  space referenced inside \mintinline{scheme}{MOSES_HYPER_PARAMETERS}.
+\item \mintinline{scheme}{$fitness} is a MeTTa variable representing a
+  hole in the query to be determined by MOSES for each candidate,
+  corresponding to the actual fitness score of that candidate.
+\item \mintinline{scheme}{Σ} is the Sigma type constructor, aka
+  dependent sum, here used to express the existence of a candidate in
+  a constructive manner.
+\item \mintinline{scheme}{$cnd_prf} is a hole representing an
+  inhabitant of that sigma type, which, upon answering the query,
+  should contain both the candidate and the proof that this candidate
+  fulfills the query.
+\item What it outputs is the query itself where the holes have been
+  filled with actual values.  If more than one result exists, then the
+  output is a superposition of results.  An example of output would be
+  {\scriptsize
+  \begin{minted}{scheme}
+    [(: (MkΣ (\ z (s z) (not z)) PRF1) (Σ (-> Bool Bool Bool) (FitMyData 0.2))),
+     (: (MkΣ (\ z (s z) (or z (s z))) PRF2) (Σ (-> Bool Bool Bool) (FitMyData 0.5))),
+     (: (MkΣ (\ z (s z) (and z (s z))) PRF3) (Σ (-> Bool Bool Bool) (FitMyData 0.8)))]
+  \end{minted}
+  } which is the superposition of three results, each corresponding to
+  a candidate, such as \mintinline{scheme}{(\ z (s z) (and z (s z)))},
+  a proof, here undefined and represented by \mintinline{scheme}{PRF3},
+  that the candidate has a certain fitness score, such as
+  \mintinline{scheme}{0.8}.
+  \mintinline{scheme}{\} represents a lambda, while
+  \mintinline{scheme}{z} and \mintinline{scheme}{(s z)} represent De
+  Bruijn indices.  More details will be provided on that later.
 \end{itemize}
 
-In that example \mintinline{scheme}{FitMyData} is used to hide the complexity of
-the query, it does mean though that a space containing the definition
-of
-\mintinline{scheme}{FitMyData} must be provided in the hyper-parameter, and other
-mind-agents will need to have access to that space to fully unpack the
-meaning of \mintinline{scheme}{FitMyData}.  More self contained definitions can also be
-provided by a structured type instead of a mere symbol referring to a
-predefined type.  How exactly that structured type would look like is
-beyond the scope of that document and does not matter too much.  All
-that matters is that the resulting type follows the type signature
-required by \mintinline{scheme}{Σ}, which in that specific example would be
+In that example \mintinline{scheme}{FitMyData} hides the complexity of
+the query.  More self contained definitions can also be provided by a
+structured type instead of a mere symbol referring to a predefined
+type.  How exactly that structured type would look like is beyond the
+scope of that document and does not matter much.  All that matters is
+that the resulting type follows the type signature required by
+\mintinline{scheme}{Σ}, which, in that specific example, would be
 
 \begin{minted}{scheme}
 (-> (-> Bool Bool Bool) Type)
 \end{minted}
-meaning that \mintinline{scheme}{FitMyData}, or whatever equivalent structured type, must
-describe a type constructor that takes a binary boolean function and
-returns a type.  This is a common way to represent predicates in
-Dependently Typed Languages.
+meaning that \mintinline{scheme}{(FitMyData FITNESS)}, or whatever
+equivalent structured type, must describe a type constructor that
+takes a binary boolean function and returns a type.  This is a common
+way to represent predicates in Dependently Typed Languages.\\
 
 Maybe one realizes that MOSES is in fact inadequate to discover such
-candidate, thus may attempt to call the backward chainer instead
+candidate, and decides to try the backward chainer instead
 
 \begin{minted}{scheme}
-(bc BC_HYPER_PARAMETER
+(bc BC_HYPER_PARAMETERS
     (: $cnd_prf (Σ (-> Bool Bool Bool) (FitMyData $fitness))))
 \end{minted}
 As you can see the call is almost the same, only the function being
@@ -519,9 +520,9 @@ called and its hyper-parameters are different, the query is identical.
 But the use of that common language does not stop here as mind agents
 can use such querying format internally.  Let's say for instance that
 MOSES, within the course of its execution has an important decision to
-make, which could be for instance: should I search a given deme more
-deeply, or abandon that deme and create a new one?  A sketch of the
-code could like like:
+make, having for instance to decide whether to search a given deme
+more deeply or abandon that deme and create a new one.  A rough sketch
+of the code may look like:
 
 \begin{minted}{scheme}
 (= (moses $hps $query)
@@ -531,33 +532,33 @@ code could like like:
              CREATE_NEW_DEME)
          ...)
 \end{minted}
-The idea is that instead of having \mintinline{scheme}{continue-search-deme} make
-that decision in isolation, MOSES can formulate that question to
-Hyperon.  If Hyperon knows the answer, then MOSES can take advantance
-of that knowledge, ortherwise it can defer to a default behavior.
-What it means that is the code of \mintinline{scheme}{continue-search-deme},
-instead of solely consisting of hardcoded heuristics, may contain
-queries such as
+The idea is that instead of having
+\mintinline{scheme}{continue-search-deme} make that decision by
+itself, MOSES can formulate that question to Hyperon.  If Hyperon
+knows the answer, then MOSES can take advantance of that knowledge,
+otherwise it can defer to a default behavior.  What it means is that
+the code of \mintinline{scheme}{continue-search-deme}, instead of
+solely consisting of hardwired heuristics, may contain queries such as
 
 \begin{minted}{scheme}
 (bc BC_HYPER_PARAMETERS QUERY_ABOUT_DEME_CONTINUATION)
 \end{minted}
 Here the backward chainer is used as example because it is assumed to
-be somewhat unversal, maybe we want to have an even more universal
-access point such as \mintinline{scheme}{hyperon}, this looking even closer to the
-SampleLink idea.  Regardless, what will typically happen is that
-such query will be parameterized to have a minimal cost, to not slow
-down MOSES in its process flow.  For instance the depth of reasoning
-used to answer that query could be null or almost null, keeping the
-reasoning shallow and inexpensive, if any.  That way, if Hyperon knows
-the answer it can help MOSES right away, otherwise, a record of that
-innability to answer can be kept and used as feedback to incentivize
-Hyperon to learn to succeed in the future.
+be somewhat universal.  Maybe we want to have an even more universal
+access point such as \mintinline{scheme}{hyperon}, which is
+reminiscent to the \emph{SampleLink} idea.  Regardless, typically such
+queries will be parameterized to have low costs, as to not slow down
+MOSES in its progress.  For instance the depth of reasoning used to
+answer could be practically null, keeping the reasoning shallow and
+inexpensive, if any.  That way, if Hyperon knows the answer it can
+help MOSES right away, otherwise, a record of its inability to answer
+can be kept and used as feedback to incentivize Hyperon to learn to
+how to in the future.
 
 One could envision a scenario where MOSES is being called on a series
-of problems, while in the background other mind-agents operate some
-forms of meta-learning and meta-reasoning to build-up the knowledge to
-eventually help MOSES.  This can be illustrated as follows:
+of problems, while in the background other mind agents operate some
+forms of meta-learning to build-up the knowledge to eventually help
+MOSES.  This can be illustrated as follows:
 
 {\small
 \begin{minted}{scheme}
@@ -567,11 +568,11 @@ eventually help MOSES.  This can be illustrated as follows:
 (moses HP4 QUERY4)  |  Meta-learning (discovery) ; <- Fails to help
 (moses HP5 QUERY5)  |  Meta-learning ...         ; <- Hyperon succeeds!
 \end{minted}
-} During the first four runs, Hyperon fails to help MOSES at that
+} During the first four runs, Hyperon fails to help MOSES at a
 particular decision point (such as deme continuation).  During the
 fourth run the knowledge to help is finally discovered, leading
 Hyperon to guide MOSES during the fifth run by making it take the
-branch with the likely better outcome.
+right branch, the one with a higher probability of success.
 
 \section{Black Box vs Clear Box}
 \label{sec:blackbox-clearbox}
