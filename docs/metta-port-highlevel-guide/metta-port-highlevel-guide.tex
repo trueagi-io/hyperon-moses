@@ -579,33 +579,17 @@ fourth run the knowledge to help is finally discovered, leading
 Hyperon to guide MOSES during the fifth run by making it take the
 right branch, the one with a higher probability of success.
 
-\section{Black Box vs Clear Box}
-\label{sec:blackbox-clearbox}
-
-The most basic way to use a fitness function is as a black box that
-can score candidate solutions and nothing more.  That is likely the
-only way when it is written in a foreign programming language such as
-C++.  However, as soon as it is written in MeTTa it becomes a clear
-box.  Such fitness can now be analyzed and reasoned upon.  The
-possibilities this offers are limitless.  Just to give a simple
-example, one could for instance invoke a reasoner to come up with a
-fitness estimator that is less accurate but more efficient than the
-original fitness, while guarantying properties such that for instance
-the estimator pointwise dominate the original fitness, so that it will
-never under-evaluate good candidates, etc.
-
-I mentioned earlier that MOSES was able to handle multi-objective
-fitness, it was in fact the only available transparency with respect
-to the fitness function MOSES had.  Using MeTTa to describe such
-fitness would allow to go much beyond that.
-
 \section{Program Evolution as a Form of Reasoning}
 
-One way to realize cognitive synergy is to never really leave the
-logical side.  That is, having MOSES explicitely operate as a form of
-reasoning.  I am not necessarily advocating for that, because it has a
-number of drawbacks, but it is likely the way I would do it if I were
-tasked to do the MOSES port myself.  The main drawbacks are
+What if querying Hyperon for help was not limited to a number of
+decision points throughout the program, but instead entirely composed
+it?  This idea, pushed to the extreme, corresponds to framing MOSES as
+an explicit form of reasoning, which is what we will explore in this
+Section.  Before I begin, let me say that I am not necessarily
+advocating for that approach, even though I like it and is probably
+the approach I would take if I were to port MOSES to Hyperon myself.
+It spite of that I also recognize that it has a number of drawbacks.
+The main ones are
 \begin{enumerate}
 \item the unfront cost of formulating evoluationary learning as a form of
 reasoning;
@@ -874,6 +858,26 @@ it \mintinline{scheme}{CPU} to capture that idea.
       Hyperon improve that heuristic on its own.
    \end{enumerate}
 \end{enumerate}
+
+\section{Black Box vs Clear Box}
+\label{sec:blackbox-clearbox}
+
+The most basic way to use a fitness function is as a black box that
+can score candidate solutions and nothing more.  That is likely the
+only way when it is written in a foreign programming language such as
+C++.  However, as soon as it is written in MeTTa it becomes a clear
+box.  Such fitness can now be analyzed and reasoned upon.  Just to
+give a simple example, one could for instance invoke a reasoner to
+come up with a fitness estimator that is less accurate but more
+efficient than the original fitness function, while guarantying
+properties such that, for instance, the estimator dominates pointwise
+the original fitness so that it will never under-evaluate good
+candidates, etc.
+
+I mentioned earlier that MOSES was able to handle multi-objective
+fitness, it was in fact the only form of transparency MOSES had with
+respect to the fitness function.  Using MeTTa to describe such fitness
+function would allow us to go much further.
 
 \section{Modularity}
 
