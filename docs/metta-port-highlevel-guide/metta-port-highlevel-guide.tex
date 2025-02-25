@@ -297,10 +297,10 @@ use PLN.  There is also the problem of transfering knowledge across
 demes, and ultimately across problems as well.  For instance ideally
 the wisdom accumulated to effectively sample a deme should not be
 thrown away when a new deme is created.  Speaking of sampling, I want
-to briefly mention an idea suggested by Ben a while ago that remains
-quite relevant to Cognitive Synergy and the approach suggested in that
-document.  The idea is to frame problem solving as queries to a
-universal sampler, called \emph{SampleLink}, concentrating in one
+to briefly mention an idea suggested by Ben Goertzel a while ago that
+remains quite relevant to Cognitive Synergy and the approach suggested
+in that document.  The idea is to frame problem solving as queries to
+a universal sampler, called \emph{SampleLink}, concentrating in one
 entry point the wisdom and solving capability of the whole system.
 Here, we do not make commitments as to whether that solver should be
 or not presented as a sampler, but the idea of funneling problem
@@ -582,30 +582,31 @@ right branch, the one with a higher probability of success.
 \section{Program Evolution as a Form of Reasoning}
 
 What if querying Hyperon for help was not limited to a number of
-decision points throughout the program, but instead entirely composed
-it?  This idea, pushed to the extreme, corresponds to framing MOSES as
-an explicit form of reasoning, which is what we will explore in this
-Section.  Before I begin, let me say that I am not necessarily
-advocating for that approach, even though I like it and is probably
-the approach I would take if I were to port MOSES to Hyperon myself.
-It spite of that I also recognize that it has a number of drawbacks.
+decision points throughout the program but instead was composing it
+entirely?  This is the question we will explore in this Section.  To
+be clear, what I am suggesting here is essentially to reframe MOSES as
+an explicit form of reasoning.  Before I begin, let me say that I am
+not necessarily advocating for this approach, even though I like it
+and is probably the approach I would take if I were to port MOSES to
+Hyperon myself.  I must also recognize that it has some drawbacks.
 The main ones are
 \begin{enumerate}
-\item the unfront cost of formulating evoluationary learning as a form of
-reasoning;
-\item the run-time cost of doing evolution using reasoning.
+\item the unfront cost of formulating evolutionary programming as a
+  form of reasoning;
+\item the run-time cost of emulating evolution using reasoning.
 \end{enumerate}
 The main benefit in my view, is that it enables, at least in
 potential, the deepest levels of cognitive synergy one can hope to
 achieve.  Besides, over time the run-time cost can be mitigated by
-\emph{schematizing} (as Ben Goertzel likes to say), or \emph{specializing} (as
-Alexey Potapov likes to say) the parts of MOSES that require the least
-amount of synergy with the rest of Hyperon.
+\emph{schematizing} (as Ben Goertzel likes to say), or by
+\emph{specializing} (as Alexey Potapov likes to say) the parts of
+MOSES that do not require synergy with the rest of Hyperon.
 
 Perhaps a hybrid approach can be considered from the get go, where
-MOSES is partly implemented in a functional way, and partly
-implemented as an explicit form of reasoning.  The non-determinism of
-MeTTa can actually make these distinctions somewhat blurried.
+MOSES is partly implemented as an explicit form of reasoning, and
+partly implemented in a more traditional functional way.  The
+non-determinism of MeTTa may actually make these distinctions somewhat
+blurry.
 
 The general idea of framing evoluation as a form of reasoning is that
 the problem of finding good program candidates is directly formulated
@@ -613,63 +614,86 @@ as a query in logic, then MOSES merely provides an efficient inference
 control mechanism to fulfill such query, and by that discover such
 program candidates.
 
-There are at least two ways to formulate such query, in a
-non-constructive vs constructive way.  Explaining in depth the
-difference between the two is probably outside of the scope of that
-document but for our concern it suffices to say that in constructive
-mathematics proving an existential statement, such as $\exists x
-P(x)$, garanties that there is a way to construct an object $a$ such
-that $P(a)$ is true.  While in non-constructive mathematics one could
-indeed prove the existence of such an object without ever having to be
-able to construct it.  Due to that major difference, such query will
-take a different form if it is done in a constructive versus a
-non-constructive way.
+There are at least two ways to formulate queries, constructively and
+non-constructively.  In the previous sections the constructive way was
+used, and that Section will be no different, but let me say a few
+words about their differences nonetheless.  Perhaps the most important
+one, as it relates to this document, is that proving an existential
+statement, such as $\exists x P(x)$, in constructive mathematics,
+guaranties that there is a way to construct an object $a$ such that
+$P(a)$ holds.  While in non-constructive mathematics one could indeed
+prove the existence of such an object without ever having to be able
+to construct it.  Pragmatically speaking, the way queries will be
+constructed will be different in both cases.
 
 \subsection{Constructive Way}
 
-In the constructive case a statement leading to finding a program
+In the constructive way, a statement leading to finding a program
 candidate may merely look like
 
-$$\exists x\ \texttt{GoodFit}(x)$$
-Then finding a proof of such statement will provide a program
-candidate.  To find more candidates one may simply finding more
-proofs.
+$$\exists x\ \texttt{GoodFit}(x)$$ Then finding a proof of such
+statement is guarantied to provide a program candidate.  To find more
+candidates one may simply finding more proofs.
 
 \subsection{Non-constructive Way}
 
 In the non-constructive way, it is also possible to use reasoning to
-find program candidates, but the candidate must instead be represented
-as a free variable inside the statement, and the reasoning must be
-able to instantiate that variable during reasoning.  At the end of the
-reasoning process, the candidate may be absent from the proof, but
-present inside a refined version of the statement.  For instance such
-statement may initially look like
+find program candidates, but the candidate must be represent as a hole
+inside the statement instead of being existentially quantified.  And
+the chaining engine must be able to fill that hole during reasoning.
+At the end of the reasoning process, the candidate may be absent from
+the proof, but present inside an instantiated version of the
+statement.  So instead of trying to prove
 
-$$\texttt{GoodFit}(x)$$
-Then finding a proof will result in a program candidate appearing in
-the now grounded statement
+$$\exists x\ \texttt{GoodFit}(x)$$ which again may not necessarily
+lead to instantiating a candidate, one may instead attempt to prove
+
+$$\texttt{GoodFit(\$x)}$$ resulting in a program candidate filling the
+hole
 
 $$\texttt{GoodFit(CANDIDATE)}$$
-The backward and forward chainers of Hyperon support both,
-constructive and non-constructive, ways.  Thus it is not immediately
-obvious which way is best.  Ultimately we will have to experiment with
-both ways to really know.
 
-\subsection{Type Theoretical Way}
-Perhaps contrary to popular beliefs, the type theoretical way can be
-used both constructively and non-constructively, although it
-particularily shines when used constructively.
+The backward and forward chainers of Hyperon~\cite{TODO} both support
+constructive and non-constructive mathematics.  Even though I have a
+personal preference for the constructive way, I don't think the
+non-constructive way should be ruled out either.  For reference, in
+OpenCog Classic, reasoning was always done in a non-constructive way.
+Generally, I suppose we want to be open-minded and explore multiple
+avenues.  In this document though, we focus primarily on the
+constructive way.
 
-We will give below an example of how to use dependent types, and more
-specifically the Sigma type, Σ, to represent such existentially
-quantified statements and to discover program candidates.
+\subsection{Dependent Types}
+Perhaps contrary to popular beliefs, dependent types~\cite{TODO} can
+be used both to represent constructive and non-constructive
+mathematics, although they particularly shine with the former.  Below
+we will attempt to deepen our understand of how to use dependent sums
+to represent existentially quantified statements and to discover
+program candidates via reasoning.
 
 \subsubsection{GoodFit as Type Predicate}
 
 The standard way to represent existential quantification with
-dependent types is via the Sigma type, Σ, which can be defined in
-MeTTa as follows
+dependent types is with Sigma types.  The corresponding type
+constructor, Σ, can be defined in MeTTa as follows
+\begin{minted}{scheme}
+(: Σ (-> (: $a Type) (-> $a Type) Type))
+\end{minted}
+representing a type parameterized by
+\begin{itemize}
+\item a type \mintinline{scheme}{(: $a Type)},
+\item and a type predicate \mintinline{scheme}{(-> $a Type)} over that
+  type.
+\end{itemize}
+The first type argument can be viewed as the domain of an implicit
+variable being existentially quantified, and the second type predicate
+argument can be viewed as the proposition that must existentially
+hold.  For instance
+\begin{minted}{scheme}
+(: Σ Nat Prime)
+\end{minted}
+NEXT would represent $\exists x\in \ \texttt{Prime}(x)$
 
+Next we can define
 \begin{minted}{scheme}
 (: MkΣ (-> (: $p (-> $a Type))
            (: $x $a)
@@ -678,6 +702,8 @@ MeTTa as follows
 \end{minted}
 where
 \begin{itemize}
+\item \mintinline{scheme}{MkΣ} is the dependent sum data constructor,
+  the building block to construct a proof of an existential statement,
 \item \mintinline{scheme}{$p} is a predicate type,
 \item \mintinline{scheme}{$a} is the domain of \mintinline{scheme}{$p},
 \item \mintinline{scheme}{($p $x)} is \mintinline{scheme}{$p} applied to an element \mintinline{scheme}{$x} of \mintinline{scheme}{$a},
@@ -693,22 +719,23 @@ looking for is something like
 \begin{minted}{scheme}
 (Σ (-> Bool Bool Bool) (Fit 0.7))
 \end{minted}
-where \mintinline{scheme}{(-> Bool Bool Bool)} represents the domain of the candidates,
-in this case, binary Boolean functions, and \mintinline{scheme}{(Fit 0.7)} represents the
-predicate expressing the class of candidates that are fit with degree
-of fitness 0.7.  Thus \mintinline{scheme}{GoodFit} has been replaced by the parameterized
-type \mintinline{scheme}{(Fit FITNESS)}.
-
-A proof for such type may look like
+where \mintinline{scheme}{(-> Bool Bool Bool)} represents the domain
+of the candidates, in this case the class of binary Boolean functions,
+and \mintinline{scheme}{(Fit 0.7)} represents the predicate expressing
+the class of candidates that are fit with degree of fitness 0.7.  Thus
+\mintinline{scheme}{GoodFit} has been replaced by the parameterized
+type \mintinline{scheme}{(Fit FITNESS)}.  A proof for such type may
+look like
 
 \begin{minted}{scheme}
 (MkΣ (Fit 0.7) (\ $x $y (and $x $y)) PROOF_OF_FITNESS)
 \end{minted}
 where \mintinline{scheme}{\} represents a lambda abstraction.  Note
-that, as of the time of writing this document, \mintinline{scheme}{\}
-is not part of the MeTTa syntax.  However, JeTTa a Java based MeTTa
-transpiler, seems to already supports it.  Regardless, in my made-up
-syntax
+  that, as of the time of writing this document,
+  \mintinline{scheme}{\} is not part of the MeTTa syntax.  However,
+    JeTTa, a MeTTa compiler for the JVM, seems to already supports it.
+    Regardless, in that somewhat made-up and prospective syntax of
+    lambda
 \begin{minted}{scheme}
 (\ $x $y (and $x $y))
 \end{minted}
@@ -718,7 +745,6 @@ while
 (\ $x (\ $y (and $x $y)))
 \end{minted}
 the curried version, would be typed \mintinline{scheme}{(-> Bool (-> Bool Bool))}.
-
 One can verify that each argument is an inhabitant of the argument
 types of \mintinline{scheme}{MkΣ}, meaning
 \begin{itemize}
