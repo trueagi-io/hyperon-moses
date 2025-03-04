@@ -39,97 +39,108 @@ in the context of MOSES as well as in the broader context.
 
 As the title suggests, this document is a high level guide of the
 AS-MOSES port from OpenCog Classic to MeTTa.  It is primarily
-addressed to the i-Cog team in charge of porting AS-MOSES to MeTTa.
-In fact this very document exists because Yeabsera Derese, currently
-the lead of the AS-MOSES port project, asked me to write it.  As I
-started to write, it rapidly appeared that it required to treat
-somewhat thoroughly and broadly the aspect of cognitive synergy.  This
-actually makes the major part of the document.  Please, take it as an
-initial proposal though, and a proposal among many.  It is clear that
-for cognitive synergy to be realized effectively, it requires a
-concerted agreement across the creators (and users) of Hyperon, as
-well as an ongoing exploration.
+addressed to the i-Cog team in charge of realizing that port.  In fact
+this very document exists because Yeabesera Derese, currently the lead
+of the AS-MOSES port project, asked me to write it.  This document is
+likely to attract a broader interest though.  As I started to write,
+it rapidly became clear that it required to treat somewhat thoroughly
+the aspect of cognitive synergy, which actually makes the major part
+of the document.  Please, take it as an initial proposal though, and a
+proposal among many.  It is clear that for cognitive synergy to be
+realized effectively, it requires a concerted agreement across the
+creators (and users) of Hyperon, as well as an ongoing exploration.
 
 Because I want to make the point clear, let me quickly summarize the
-main idea of cognitive synergy I develop in this document.  The main
-idea is to replace handwritten heuristics appearing throughout the
-AS-MOSES code base by explicit logically formulated queries.
-Heuristics exist because the optimal choices are too difficult to
-make.  That is precisely where Hyperon comes to the rescue.  When a
-choice is too difficult and too impact-full, instead of offering a
-hardwired, rigid and ultimately incomplete solution, poke a hole, look
-outside and ask Hyperon, in its global wisdom, for help.
+main idea of cognitive synergy I present in this document.
+Pragmatically speaking, the main idea is to replace handwritten
+heuristics appearing throughout the AS-MOSES code base by explicit
+logically formulated queries.  Heuristics exist because the optimal
+choices are too difficult to make.  That is precisely where Hyperon
+comes to the rescue.  When a choice is too difficult to make, instead
+of offering a hardwired and ultimately incomplete solution, poke a
+hole, look outside and ask Hyperon for help.
+
+The outline of the document is as follows.  The rest of this Chapter
+provides a brief history of AS-MOSES and a few words about how I
+conceive the goal of the port.  Chapter~\ref{chap:portmoses} discusses
+aspects of the port specific to MOSES as implemented in OpenCog
+Classic.  Chapter~\ref{chap:cogsyn} delves into the practicalities of
+Cognitive Synergy, between MOSES and Hyperon, MOSES and humans, MOSES
+and MOSES, alongside comments on improvements and miscellaneous
+considerations, including the perspective of framing MOSES as a form
+of reasoning.
 
 \section{AS-MOSES, a brief history}
 
-MOSES~\cite{Looks06abstractcompetent}, which stands
-for \emph{Meta-Optimizing Semantic Evolution Search}, is an
-evolutionary program learner initially developed by Moshe Looks.  It
-takes in input a problem description, and outputs a set of programs
-supposed to solve that problem.  A typical example is the problem of
-fitting data, in that case the problem description may be a table of
-inputs and outputs alongside a fitness function measuring how well a
-candidate fits that data.
+MOSES~\cite{Looks06abstractcompetent}, which stands for
+\emph{Meta-Optimizing Semantic Evolution Search}, is an evolutionary
+program learner initially developed by Moshe Looks.  It takes in input
+a problem description, and outputs a set of programs attempting to
+solve that problem.  A typical example is the problem of fitting data,
+in that case the problem description may be a table of inputs and
+outputs alongside a fitness function measuring how well a candidate
+fits that data.
 
 I believe the primary motivation behind the creation of MOSES came
 from the desire to adapt existing EDA (Estimation of Distribution
 Algorithm) methods to evolve programs instead of bitstrings.  Upon
 investigating that space, Moshe, with the help of Ben Goertzel,
 discovered that by combining a few tricks, evolving programs using EDA
-was actually competitive.  We'll come back to these tricks but, let me
-say that, as with anything, these tricks tend to only work well under
-some assumptions, which will attempt to recall as well.
+was actually competitive.  We will come back to these tricks but, let
+me say that, as with anything, these tricks tend to work well under
+some assumptions, and not so well under some others, which will
+attempt to recall as well.
 
 At some point Moshe left, and Linas Vepstas and I took over the MOSES
 code base, added a number of improvements such as stochastic
-hillclimbing, crossover, diversity pressure and more.  We, however
-never got a chance to improve the EDA part (remaining stuck in an
-somewhat incomplete stage), which is probably regrettable because, I
-believe, if done well, this method has a lot to offer.  I do not
-expand much about improving EDA in this document, only offers a few
+hillclimbing, crossover, bootstrapping, diversity management and more.
+We, however never got a chance to improve the EDA part (remaining
+stuck in an incomplete stage), which is probably regrettable because,
+I believe, if done well, this method has a lot to offer.  I do not
+expand too much about improving EDA in this document, only offer a few
 hints.  Maybe this subject deserves a future document of its own.
 
 In terms of performances, MOSES did achieve good results for its time
-for evolving programs restricted to Boolean expressions.  It performed
-poorly for programs involving floating point numbers (in spite of
-Moshe inventing a clever representation of numbers amenable to linkage
-learning).  Later on, it was also used to evolve programs controlling
-agents to perform imitation learning in virtual environments, with
-some amount of success.
+specifically for evolving programs restricted to Boolean expressions.
+It performed poorly for programs involving floating point numbers (in
+spite of Moshe inventing a clever representation of numbers amenable
+to discreet linkage learning).  Later on, it was also used to evolve
+programs controlling agents to perform imitation learning in virtual
+environments, with some amount of success.
 
 Initially, the target programming language (i.e. the representational
 language of the candidates being evolved) supported by MOSES was its
 own thing, called Combo and described by Moshe as "Lisp with a bad
 haircut".  Later on, as OpenCog Classic developed, the need to
-integrate MOSES more deeply into OpenCog Classic came to be.  And the
-task of replacing Combo by Atomese, the language of OpenCog Classic
-(the equivalent of MeTTa for Hyperon) was initiated, carried out, for
+integrate MOSES more deeply into OpenCog came to be.  And the task of
+replacing Combo by Atomese, the language of OpenCog Classic (the
+equivalent of MeTTa for Hyperon) was initiated, and carried out, for
 the most part, by Kasim Ebrahim.  The result was called AS-MOSES, for
 AtomSpace-MOSES.  That endeavor was never completed because Kasim
 left, and the development effort was shifting from OpenCog Classic to
 Hyperon anyway.
 
 The repositories of MOSES can be found here~\cite{MOSES} and that of
-AS-MOSES can be found there~\cite{ASMOSES}.  There are quite similar.
-The main difference is that AS-MOSES contains some code for evolving
-Atomese programs beside Combo.  The AS-MOSES code base is, in some
-limited respects, a bit cleaner, but also larger due to the additional
-Atomese support.  In the rest of the document I will often mention
-MOSES while meaning either MOSES or AS-MOSES, or MOSES Classic to
-denote versions coming from OpenCog Classic as opposed to future
-Hyperon versions.
+AS-MOSES can be found there~\cite{ASMOSES}.  There are reasonably
+similar.  The main difference is the AS-MOSES repository contains code
+for evolving Atomese programs beside Combo.  The AS-MOSES code base
+is, in some limited respects, a bit cleaner, but also a bit heavier
+due to the additional Atomese support.  In the rest of the document I
+will often mention MOSES while meaning either MOSES or AS-MOSES, or
+MOSES Classic to denote versions coming from OpenCog Classic as
+opposed to future versions of MOSES for Hyperon.
 
 \section{The Goal of the Port}
 
 I believe the goal of the port should not be to verbatimely reproduce
-AS-MOSES inside Hyperon.  The goal, in my opinion, should be\\
+MOSES inside Hyperon.  The goal, in my opinion, should be to\\
 
-\emph{To create a sufficiently open-ended program learning framework
-that integrates well with the rest of Hyperon to enable some form of
+\emph{Create a sufficiently open-ended program learning framework that
+integrates well with the rest of Hyperon to enable some form of
 cognitive synergy}.\\
 
-Indeed, even though AS-MOSES contains important innovations that we
-want to be ported, it essentially misses the cognitive synergy aspect.
+Indeed, even though MOSES contains important innovations that we want
+to be ported, it largely missed the cognitive synergy aspect.
 
 Pragmatically speaking, cognitive synergy here means that if MOSES
 gets stuck in the process of evolving programs, it can formulate a
@@ -139,14 +150,15 @@ they can formulate requests of help to MOSES and take advantage of it.
 There are certainly many ways such cognitive synergy could be
 realized, I will describe one that I like, or that at least I
 understand, but ultimately how to do that well, i.e. producing synergy
-as opposed to interference, remains an open question.
+as opposed to interference, remains an open field of research.
 
 There is also another form of synergy, perhaps just as important, the
 synergy between MOSES and its users.  This could for instance take the
 form of integrating MOSES to the MeTTa LSP server.  More will be said
-on that further below.
+on that further in the document.
 
 \chapter{Porting MOSES Classic}
+\label{chap:portmoses}
 
 \section{MOSES Secret Sauce}
 
@@ -280,6 +292,7 @@ provide some high-level guidance in that respect.
 \end{enumerate}
 
 \chapter{Cognitive Synergy in Practice}
+\label{chap:cogsyn}
 
 \section{Synergy between MOSES and Hyperon}
 
@@ -1083,8 +1096,6 @@ For instance it may be that the MeTTa Intermediary Language alongside
 Spatial and Behavioral Types that Greg Meredith and his team are
 developing would be more adequate, but that is another topic for
 another document.
-
-\chapter{Conclusion}
 
 \bibliographystyle{splncs04} \bibliography{local}
 
